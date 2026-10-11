@@ -1,0 +1,67 @@
+{
+  "title": "South African administrative provinces",
+  "source": "Natural Earth",
+  "dataset": "Admin 1 \u2013 States, Provinces (1:10m cultural vectors)",
+  "version": "5.1.2",
+  "release_year": 2022,
+  "boundary_year": null,
+  "boundary_year_note": "Natural Earth does not specify a common boundary reference year for these features. Release year 2022 is not an election-boundary vintage.",
+  "source_url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_10m_admin_1_states_provinces.geojson",
+  "dataset_url": "https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-1-states-provinces/",
+  "license": "Public domain",
+  "license_url": "https://www.naturalearthdata.com/about/terms-of-use/",
+  "source_sha256": "22d0e3ad85eb3e27f17cabf8ba2d50e554fbc27a87796ff891d958185da62fb5",
+  "retrieved_at": "2026-10-11",
+  "feature_count": 9,
+  "transformation": "Filtered features where admin = South Africa. Original coordinates retained; descriptive properties reduced and integer feature IDs added.",
+  "limitations": [
+    "Generalised administrative geography, not official IEC electoral boundaries.",
+    "No ward, municipal, voting-district or voting-station boundaries are included.",
+    "No historical boundary matching is implied when selecting an election year.",
+    "Western Cape includes offshore Prince Edward islands in the source geometry; the interface initially focuses on mainland South Africa.",
+    "No provincial electoral measures are bundled in the boundary GeoJSON or inferred from national totals. Verified statistical datasets are joined separately by province name."
+  ],
+  "release_date": "2022-05-13",
+  "release_evidence": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/CHANGELOG",
+  "statistical_datasets": [
+    {
+      "title": "IEC voter registration statistics",
+      "source": "Electoral Commission of South Africa (IEC)",
+      "source_id": "iec-registration-2026-09-29",
+      "source_url": "https://www.elections.org.za/pw/StatsData/Voter-Registration-Statistics",
+      "observed_at": "2026-09-29",
+      "retrieved_at": "2026-10-11",
+      "coverage": "All nine provinces",
+      "measures": [
+        "Registered voter counts",
+        "Share of the national registered roll"
+      ],
+      "limitations": [
+        "This snapshot is not a historical municipal election roll.",
+        "Share of the national roll is not an eligible-population registration rate.",
+        "Registration does not establish voting participation."
+      ]
+    },
+    {
+      "title": "IEC 2016 Municipal Elections Report",
+      "source": "Electoral Commission of South Africa (IEC)",
+      "source_id": "iec-municipal-2016",
+      "source_url": "https://www.elections.org.za/content/Documents/Election-reports/Municipal-Elections/2016-Municipal-Elections-Report/",
+      "observed_at": "2016",
+      "retrieved_at": "2026-10-11",
+      "coverage": "All nine provinces; non-participation available for seven provinces",
+      "measures": [
+        "Certified voters roll counts",
+        "Published voter turnout percentages",
+        "Participating-voter counts",
+        "Derived non-participation where an effective-roll denominator is compatible"
+      ],
+      "limitations": [
+        "The data uses 2016 election provinces; Natural Earth version 5.1.2 was published in 2022 and does not specify a boundary vintage. The modern overview cannot establish historical boundary equivalence.",
+        "Published turnout is retained rather than replaced by a recalculated rate.",
+        "Certified rolls differ from effective turnout rolls including MEC7 additions.",
+        "Eastern Cape and Limpopo report roll-count conflicts prevent a compatible effective denominator; non-participation is unavailable for those provinces."
+      ]
+    }
+  ]
+}

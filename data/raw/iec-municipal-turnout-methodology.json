@@ -1,0 +1,9 @@
+{
+  "originalUrl": "https://results.elections.org.za/home/",
+  "observedAt": "2026-10-11",
+  "retrievedAt": "2026-10-11",
+  "format": "HTML",
+  "sha256": "7834a350e54c1ac84fe6bab843625e1890a7d57e404e7aa36c40b7d6f6097f3b",
+  "excerpt": "Local government election results reports\nResults Summary\nDisplays the votes cast across all ballot types at National, Provincial, Municipal, Ward or Voting District levels.\nParty Results\nDisplays the number of votes cast and overall support for the selected party.\nSeat Calculation Detail\nList the details of how the seat calculation was made.\nPercentage Voter Turnout\nDisplays the percentage voter turnout by comparing the highest of either Ward or PR votes cast to the sum of registered population and MEC7 votes cast.\nSpoilt Votes\nDisplays the proportion of spoilt votes cast by ballot type.\nDownloadable report data\nVariety of low-level reports in Excel or CSV format.\nDownloadable detailed results\nDisplays the number of votes cast, including spoilt votes for each party in the selected municipality and voting district.\n",
+  "note": "The webpage defines Percentage Voter Turnout using highest of Ward or PR ballots, divided by registered population plus MEC7 entries. This is an IEC operational measure; the source does not use summed municipal ballot papers as the participating-person numerator."
+}

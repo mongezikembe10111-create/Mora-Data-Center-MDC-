@@ -1,0 +1,490 @@
+.electoral-map-panel {
+  overflow: hidden;
+}
+.electoral-map-panel .panel-header {
+  align-items: center;
+}
+.electoral-map-panel h2 {
+  margin-bottom: 7px;
+}
+.map-scope-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  color: #a4aac0;
+  border: 1px solid #303747;
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 11px;
+}
+.map-filter-bar {
+  display: flex;
+  gap: 14px;
+  padding: 4px 24px 20px;
+  align-items: end;
+}
+.map-dataset-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #ada0d7;
+  font-size: 9px;
+  margin: -6px 24px 12px;
+  flex-wrap: wrap;
+}
+.map-dataset-status.unavailable {
+  color: #949cb2;
+}
+.map-status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ac94e8;
+  flex-shrink: 0;
+}
+.map-dataset-status.unavailable .map-status-dot {
+  background: #66708b;
+}
+.map-global-year {
+  color: #7c87a0;
+  margin-left: auto;
+}
+.map-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #959db2;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.map-field .select {
+  min-width: 126px;
+  font-size: 12px;
+}
+.map-province-field {
+  flex: 1;
+}
+.map-province-field .select {
+  width: 100%;
+}
+.map-reset-button {
+  white-space: nowrap;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 35px;
+}
+.electoral-map-stage {
+  position: relative;
+  height: 430px;
+  margin: 0 24px;
+  overflow: hidden;
+  background: #0e1421;
+  border: 1px solid #283043;
+  border-radius: 8px;
+}
+.electoral-map-canvas {
+  position: absolute;
+  inset: 0;
+}
+.electoral-map-canvas::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 90px 14px #0a10234d;
+}
+.map-canvas-hidden {
+  visibility: hidden;
+}
+.electoral-map-svg {
+  width: 100%;
+  height: 100%;
+}
+.province-shape {
+  fill: #34384c;
+  stroke: #6c7391;
+  stroke-width: 1;
+  cursor: pointer;
+  transition: fill 0.15s;
+}
+.province-shape:hover,
+.province-shape:focus {
+  fill: #544e72;
+  outline: none;
+  stroke: #c7baff;
+  stroke-width: 2;
+}
+.province-shape.selected {
+  fill: #8470e8;
+  stroke: #c7baff;
+  stroke-width: 2;
+}
+.province-shape.has-registration:hover,
+.province-shape.has-registration:focus {
+  filter: brightness(1.18);
+}
+.province-shape.has-registration.selected {
+  stroke: #f2e8ff;
+  stroke-width: 2.5;
+}
+.province-svg-label {
+  fill: #d7d9e6;
+  font-size: 11px;
+  font-family: inherit;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: #252a42;
+  stroke-width: 3;
+  letter-spacing: 0.02em;
+}
+.province-map-label {
+  font-family: inherit;
+  color: #d5d8e6;
+  text-shadow:
+    0 1px 4px #080d1b,
+    0 0 5px #080d1b;
+  background: transparent;
+  padding: 3px 4px;
+  border: 0;
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  letter-spacing: 0.015em;
+}
+.province-map-label:hover,
+.province-map-label:focus-visible {
+  color: white;
+  background: #171d32;
+  border-radius: 3px;
+  outline: 1px solid #b6a5fc;
+}
+.map-compass {
+  position: absolute;
+  left: 19px;
+  top: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: #adb6cb;
+  font-size: 10px;
+}
+.map-compass svg {
+  width: 15px;
+  height: 25px;
+}
+.map-zoom-controls {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #323b51;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px #06091466;
+}
+.map-zoom-controls button {
+  display: grid;
+  place-items: center;
+  width: 31px;
+  height: 31px;
+  background: #192033;
+  color: #b5bbcf;
+  border: none;
+  cursor: pointer;
+}
+.map-zoom-controls button + button {
+  border-top: 1px solid #323b51;
+}
+.map-zoom-controls button:hover,
+.map-zoom-controls button:focus-visible {
+  color: #fff;
+  background: #32304f;
+}
+.map-location-pill {
+  position: absolute;
+  top: 14px;
+  left: 60px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: #b2b9cb;
+  padding: 7px 9px;
+  border-radius: 4px;
+  border: 1px solid #293249;
+  background: #101727dc;
+  pointer-events: none;
+}
+.map-location-pill span {
+  color: #6f7b93;
+  padding-left: 7px;
+  border-left: 1px solid #32394b;
+  margin-left: 3px;
+}
+.map-ocean-label {
+  position: absolute;
+  bottom: 42px;
+  left: 34px;
+  font-size: 8px;
+  letter-spacing: 0.17em;
+  color: #526079;
+  transform: rotate(-26deg);
+  pointer-events: none;
+}
+.map-hover-card {
+  position: absolute;
+  bottom: 16px;
+  right: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px 14px;
+  border: 1px solid #3c435c;
+  background: #161c2fee;
+  border-radius: 7px;
+  box-shadow: 0 6px 18px #090d1899;
+  pointer-events: none;
+}
+.map-hover-card strong {
+  font-size: 12px;
+  color: #e1def4;
+}
+.map-hover-card span {
+  color: #929bb4;
+  font-size: 10px;
+}
+.map-selection-card {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  max-width: 250px;
+  width: calc(100% - 40px);
+  background: #161c2ff2;
+  border: 1px solid #454262;
+  box-shadow: 0 8px 24px #060a1699;
+  border-radius: 7px;
+  padding: 14px 16px;
+  backdrop-filter: blur(12px);
+}
+.map-selection-card .eyebrow {
+  color: #aa9cdf;
+  font-size: 8px;
+  margin: 0;
+  letter-spacing: 0.11em;
+}
+.map-selection-card h3 {
+  font-size: 17px;
+  color: #eeebfb;
+  margin: 8px 0 14px;
+}
+.map-selection-metric {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11px;
+  padding-top: 10px;
+  border-top: 1px solid #343a52;
+}
+.map-selection-metric span {
+  color: #939cb2;
+}
+.map-selection-metric strong {
+  color: #c3bbdd;
+  font-weight: 500;
+}
+.map-national-share {
+  margin-top: 9px;
+  padding-top: 0;
+  border-top: 0;
+}
+.map-selection-card p {
+  font-size: 10px;
+  color: #8390aa;
+  line-height: 1.6;
+  margin: 9px 0 0;
+}
+.map-legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 24px;
+  color: #8993ad;
+  font-size: 10px;
+}
+.map-legend > div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.map-legend-swatch,
+.map-legend-selected {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  display: inline-block;
+  background: #34384c;
+  border: 1px solid #626b85;
+}
+.map-legend-selected {
+  background: #8470e8;
+  border-color: #c7baff;
+  margin-left: 12px;
+}
+.registration-map-legend {
+  padding: 14px 24px 12px;
+  color: #a1a9bf;
+  font-size: 9px;
+}
+.registration-legend-title {
+  color: #8d96b0;
+  font-size: 8px;
+  letter-spacing: 0.09em;
+}
+.registration-map-legend > div {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 9px;
+}
+.registration-map-legend > div > span {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  white-space: nowrap;
+}
+.registration-map-legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1px solid #b4a3d23d;
+}
+.registration-map-legend p {
+  margin: 9px 0 0;
+  color: #6f7c95;
+  font-size: 8px;
+}
+.map-source-note {
+  border-top: 1px solid #282f40;
+  background: #111726;
+  padding: 12px 24px 14px;
+  color: #7c879f;
+  font-size: 9px;
+  line-height: 1.65;
+}
+.map-source-note p {
+  margin: 0;
+}
+.map-source-note p + p {
+  margin-top: 4px;
+}
+.map-source-note strong {
+  font-weight: 500;
+  color: #959eb2;
+}
+.map-source-note a {
+  color: #b9f56a;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.map-source-note a:hover {
+  text-decoration: underline;
+}
+.map-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  color: #9aa6c0;
+  font-size: 12px;
+  padding: 24px;
+}
+.map-loading-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #9c89e8;
+  box-shadow: 0 0 16px #9c89e899;
+}
+@media (max-width: 900px) {
+  .map-scope-badge {
+    display: none;
+  }
+  .map-filter-bar {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .map-field {
+    flex: 1;
+  }
+  .map-province-field {
+    flex-basis: 45%;
+  }
+  .map-reset-button {
+    flex: 1;
+    justify-content: center;
+  }
+  .map-legend {
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 600px) {
+  .map-filter-bar {
+    padding: 0 16px 16px;
+    gap: 10px;
+  }
+  .map-dataset-status {
+    margin: -3px 16px 12px;
+  }
+  .map-global-year {
+    margin-left: 0;
+  }
+  .registration-map-legend {
+    padding: 13px 16px;
+  }
+  .electoral-map-stage {
+    margin: 0 16px;
+    height: 360px;
+  }
+  .map-field .select {
+    min-width: 0;
+    width: 100%;
+  }
+  .map-legend {
+    padding: 13px 16px;
+    font-size: 9px;
+  }
+  .map-legend-selected {
+    margin-left: 5px;
+  }
+  .map-source-note {
+    padding: 12px 16px;
+  }
+  .map-location-pill {
+    left: 46px;
+    font-size: 8px;
+  }
+  .map-location-pill span {
+    display: none;
+  }
+  .map-selection-card {
+    max-width: 210px;
+    padding: 12px;
+  }
+  .map-ocean-label {
+    display: none;
+  }
+}
