@@ -17,6 +17,19 @@ export default function Footer() {
           <Link href="/methodology">
             Methodology & sources <ArrowUpRight size={13} />
           </Link>
+          <Link href="/participation">Public participation</Link>
+          <Link href="/bills">Follow bills</Link>
+          <Link href="/municipalities">Municipal participation directory</Link>
+          <Link href="/participation#pmg-resources">
+            PMG updates & free subscriptions
+          </Link>
+          <a
+            href="https://registertovote.elections.org.za/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Register to vote · IEC <ArrowUpRight size={13} />
+          </a>
           <Link href="/about">About MORA</Link>
           <Link href="/contact">Contact</Link>
           <Link href="/accessibility">Accessibility</Link>

@@ -1,37 +1,48 @@
 # Verification record
 
-Validated in the Codex cloud environment on 11 October 2026 using Node.js 24.19.0, the repository's npm lockfile, and system Chromium. The repository was initially empty; this record describes the newly built application, not a public deployment.
+Validated in the Codex cloud environment on **12 October 2026**, using Node.js 24.19.0, the frozen npm lockfile, Next.js 16.4.0 and system Chromium 154. This record covers the electoral refinement and citizen-participation release. It is not a public website deployment.
 
 ## Application checks
 
-- Frozen-lockfile installation: the saved install script installed 569 packages and validated the curated data successfully.
-- TypeScript and production compilation: passed. Next.js generated all application routes and the three research article pages.
-- Unit suite: 37 tests passed, covering election denominators, missing values, source/schema integrity, registration reconciliations, geography, CSV safety and scenario baselines.
-- Browser suite: 12 tests passed across desktop (1280 × 720) and mobile (390 × 844) Chromium. Coverage includes navigation/search, data-to-empty-state chart resets, CSV downloads, comparison URL restoration, scenarios, composition charts and core-route axe checks.
-- Production smoke checks: actual lazy chart and map rendering, linked province selection, year changes, source-aware SVG and PNG downloads, male/female accessible composition values and CSV columns, and desktop/mobile overflow checks passed with no application or console errors.
-- Earlier route sweep: all 19 public routes returned HTTP 200 and rendered at desktop/mobile widths without horizontal overflow or application errors.
+- Frozen-lockfile installation: the saved install script installed 566 packages and validated the curated electoral data successfully.
+- TypeScript and production compilation: passed. The build generated 53 artifacts, including 50 public content routes and 28 sourced participation-detail pages.
+- Unit suite: **65 tests passed**, covering electoral denominators, participation-gap decomposition, bounded youth counts, age comparisons, source/schema integrity, registration reconciliations, geography, municipal coverage, civic deadlines, calendar exports, CSV safety and scenario baselines.
+- Browser suite: **22 tests passed** across desktop (1280 × 720) and mobile (390 × 844) Chromium. Coverage includes navigation/search, source-aware downloads, data/empty-state transitions, comparisons and URL restoration, scenarios, composition charts, civic filters, real timed reminders, unsent drafts, and accessibility. After adding geography to gap exports, the affected four desktop/mobile refinement tests passed again.
+- Production route sweep: **all 50 public content routes returned HTTP 200 and contained a main heading**. An unknown participation notice returned HTTP 404.
+- Production municipal-directory checks: code/name search, province/type/topic filters, filtered CSV, pagination and empty-state reset passed. No horizontal overflow at 390 px, serious/critical axe violations, or application runtime errors were observed.
+- Production map checks: the upgraded MapLibre 6.4.1 canvas rendered with WebGL enabled; the interactive SVG fallback rendered with WebGL disabled. Province selection, 2016 turnout/nonparticipation, unavailable 2021 provincial observations and restoration of the 2026 registration snapshot passed in both modes, with no application runtime errors.
+- Production civic checks: the municipal bills view shows draft Ward Committee rules while the spatial-development plan retains a proposal-document label. Homepage and participation pages rendered without horizontal overflow at 390 px or application runtime errors.
+- Dependency audit: the complete `npm audit --json` reported **zero known vulnerabilities** after upgrading MapLibre. This describes the audit result at verification time, not a guarantee about future advisories.
 
 ## Mobile homepage Lighthouse
 
-Audit version 13.5.0, Chromium 154, default simulated mobile throttling, production server. Recorded 2026-10-11T21:46:32.881Z. This audit covers the homepage; these scores are not claims about every route or a full WCAG certification.
+Lighthouse 13.5.0, Chromium 154, default simulated mobile throttling, production server. Recorded **2026-10-12T18:53:12.923Z**. These scores cover the homepage and are not claims about every route or complete WCAG conformance.
 
 | Category       | Score |
 | -------------- | ----: |
-| Performance    |    91 |
+| Performance    |    90 |
 | Accessibility  |   100 |
 | Best practices |   100 |
 | SEO            |   100 |
 
-First contentful paint: 0.8 s. Largest contentful paint: 2.9 s. Total blocking time: 230 ms. Cumulative layout shift: 0.
+First contentful paint: 0.9 s. Largest contentful paint: 2.9 s. Total blocking time: 260 ms. Cumulative layout shift: 0.
 
-Charts use a modular SVG ECharts engine and load near the viewport. The map and its styles load near the viewport, with an accessible SVG fallback. Self-hosted variable fonts are preloaded with adjusted fallbacks. Navigation avoids automatically fetching large analytics routes before they are selected. Motion uses native animations for changing bars and respects reduced-motion preferences.
+Charts use a modular SVG ECharts engine and load near the viewport. The map and its styles also load near the viewport. Citizen-action cards render on the server, keeping the unrelated civic-notice dataset out of the initial dashboard JavaScript. Self-hosted variable fonts use adjusted fallbacks. Navigation avoids automatically fetching large analytics routes. Motion respects reduced-motion preferences.
 
-To reproduce, run `npm run build`, start the production server, and audit it with the installed Lighthouse CLI. Stop any development process using the same output directory before building. Browser tests use a separate `.next-e2e` directory and port 3001.
+To reproduce, run `npm run build`, start the production server, and audit it with Lighthouse. Stop any development process using the same output directory before building. Browser tests use a separate `.next-e2e` directory and port 3001.
 
-## Data and launch limits
+## Verified data and coverage limits
 
-Five municipal election records and eight verified source records pass validation. The eight published registration age bands and nine province totals each independently reconcile to 29,230,808 registered people on 29 September 2026. Seven user-supplied observations remain unverified and excluded from published statistics.
+Five municipal election records and eight electoral source records pass validation. The eight original registration age bands and nine province totals independently reconcile to **29,230,808** registered people on 29 September 2026. Seven user-supplied observations remain unverified and excluded from published statistics.
 
-Eligible-citizen denominators, exact youth 18–35 statistics, youth turnout, municipal/metro/ward series and party performance remain unavailable where compatible official data has not been verified. Original age bands and the 2000/2006/2021 source limitations remain visible. See the methodology page and README for details.
+The 2021 observed effective-electorate gap is **14,239,459** people. The source-based adult-population estimate gives a wider gap of **26,510,188**, with explicit decomposition and non-citizen/period limitations. Verified 2016 original age-band turnout rates retain their published whole-percent precision. Exact eligible-citizen denominators, exact 18–35 counts/rates, current youth turnout, municipal/metro/ward electoral series and party performance remain unavailable where compatible official evidence has not been verified. No 2021 population estimate is applied to another year or province.
 
-Contact produces an unsent local draft or opens a GitHub issue composer. Configure an operator contact and review policy copy before public launch. The application has not been deployed. Source publication to the user's GitHub repository was explicitly authorized after these checks. The cloud install/start instructions are saved in an environment configuration draft; environment publication and fresh-task restoration have not been tested.
+The civic snapshot contains **28 notices/reports, 21 institutional channels, seven resources and 56 hashed source captures**, checked on 12 October 2026 SAST. National calls, provincial documents, municipal consultations and oversight reports are included. All nine provincial legislatures have source channels. This is a curated snapshot: it does not claim exhaustive or automatically updated government coverage. HTTP 503 results, missing exact times and conflicting deadlines are disclosed. Users confirm changes with the linked issuer.
+
+The municipal directory covers **257 councils**: eight metropolitan, 44 district and 205 local. It contains **440 verified topic destinations across 168 councils**, with published website fallbacks for the other 89. A working destination does not establish that a consultation is currently open. See [civic source methodology](civic-source-methodology.md).
+
+## Publication and setup
+
+Submission and enquiry helpers create unsent local drafts. PMG subscription and voter registration take place on the respective external sites. The IEC link does not promise that registrations after the 7 August proclamation qualify for the 4 November 2026 municipal election.
+
+The application has not been deployed publicly. Configure an operator contact and review policy copy before public launch. Publishing the source to the user's GitHub repository is authorized. Cloud installation/start instructions are saved in the environment draft; publication and fresh-task restoration remain separate from this instance's verified setup. [START-HERE-WINDOWS.txt](../START-HERE-WINDOWS.txt) explains how to install and run the downloaded update on a PC.

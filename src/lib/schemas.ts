@@ -24,15 +24,52 @@ export const electionRecordSchema = z
     voters: count,
     validBallots: count,
     eligible: count,
+    votingAgePopulation: count.optional(),
+    votingAgePopulationSourceId: z.string().min(1).optional(),
+    votingAgePopulationNote: z.string().min(1).optional(),
     turnout: z.number().min(0).max(100).nullable(),
     turnoutDenominator: count.optional(),
     turnoutBasis: z
       .enum(["effective-electorate", "ballot-pool", "unreconciled"])
       .optional(),
+    participationComparisonDenominator: count.optional(),
     sourceId: z.string().min(1),
     note: z.string().optional(),
   })
   .superRefine((record, context) => {
+    if (record.votingAgePopulation != null) {
+      if (
+        !record.votingAgePopulationSourceId ||
+        !record.votingAgePopulationNote
+      )
+        context.addIssue({
+          code: "custom",
+          path: ["votingAgePopulation"],
+          message:
+            "A voting-age estimate requires its source and population/period limitations.",
+        });
+      if (
+        record.registered !== null &&
+        record.registered > record.votingAgePopulation
+      )
+        context.addIssue({
+          code: "custom",
+          path: ["votingAgePopulation"],
+          message:
+            "The compatible adult-population estimate cannot be below the certified roll.",
+        });
+    }
+    if (
+      record.participationComparisonDenominator != null &&
+      (record.participationComparisonDenominator !== record.registered ||
+        record.turnoutDenominator !== null)
+    )
+      context.addIssue({
+        code: "custom",
+        path: ["participationComparisonDenominator"],
+        message:
+          "A qualified certified-roll comparison must use the documented roll and an explicitly unreconciled person-level turnout denominator.",
+      });
     if (
       record.registered !== null &&
       record.eligible !== null &&
@@ -211,6 +248,15 @@ export const provinceRegistrationRecordSchema = z.object({
   province: z.string().min(1),
 });
 
+export const ageTurnoutRecordSchema = z.object({
+  ageGroup: z.string().min(1),
+  turnout: z.number().int().min(0).max(100),
+  observedAt: referenceDate,
+  sourceId: z.string().min(1),
+  precision: z.literal("whole-percent"),
+  note: z.string().min(1),
+});
+
 export function validateRegistrationSnapshot(
   ageRecords: unknown[],
   provinceRecords: unknown[],
@@ -267,12 +313,26 @@ export function validateDataset(
       record.voters,
       record.validBallots,
       record.eligible,
+      record.votingAgePopulation ?? null,
       record.turnout,
     ].some((value) => value !== null);
     if (containsStatistic && !source.verified)
       throw new Error(
         `Unverified source ${source.id} cannot publish election statistics.`,
       );
+    if (record.votingAgePopulation != null) {
+      const populationSource = sourceMap.get(
+        record.votingAgePopulationSourceId!,
+      );
+      if (!populationSource?.verified)
+        throw new Error(
+          `Voting-age population estimate requires a verified source: ${record.votingAgePopulationSourceId}`,
+        );
+      if (!populationSource.observedAt.startsWith(String(record.year)))
+        throw new Error(
+          "Voting-age population estimate and election years must agree.",
+        );
+    }
   }
   return { elections: validRecords, sources: validSources };
 }

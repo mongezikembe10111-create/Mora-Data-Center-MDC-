@@ -56,6 +56,72 @@ export const explorerMetrics = {
     definition:
       "The official effective turnout electorate minus participating voters, calculated only when both compatible counts are available.",
   },
+  electorateParticipationGap: {
+    label: "Electorate participation gap",
+    unit: "people",
+    definition:
+      "Effective election electorate minus participating voters. Where explicitly documented (2000 nationally and Eastern Cape/Limpopo in 2016), a qualified certified-roll comparison is available because the operational turnout denominator is unreconciled. It is not the gap among all eligible citizens and does not explain why people did not vote.",
+  },
+  electorateParticipationGapRate: {
+    label: "Electorate nonparticipation",
+    unit: "%",
+    definition:
+      "Electorate participation gap divided by its documented count-comparison denominator. Qualified certified-roll comparisons are distinct from published turnout and its complement.",
+  },
+  participationGap: {
+    label: "Eligible-citizen participation gap",
+    unit: "people",
+    definition:
+      "Compatible legally eligible South African citizens minus participating voters, including eligible people who are unregistered. Unavailable when a citizenship-and-age denominator is not verified.",
+  },
+  participationGapRate: {
+    label: "Eligible-citizen nonparticipation",
+    unit: "%",
+    definition:
+      "Eligible-citizen participation gap / eligible citizens × 100. A voting-age resident population estimate cannot substitute for eligible citizens.",
+  },
+  registrationGap: {
+    label: "Eligible citizens outside certified roll",
+    unit: "people",
+    definition:
+      "Compatible eligible citizens minus certified registered voters. Election-day roll additions must be accounted for separately when partitioning electoral participation.",
+  },
+  votingAgePopulation: {
+    label: "Estimated voting-age population",
+    unit: "people",
+    definition:
+      "Same-election-year official estimated adult population, kept distinct from legally eligible South African citizens. Estimates may include ineligible residents and carry population-estimation uncertainty.",
+  },
+  votingAgeRegistrationCoverage: {
+    label: "Estimated adult registration coverage",
+    unit: "%",
+    definition:
+      "Certified registered voters / same-year estimated voting-age population × 100. Population coverage estimate, not a verified eligible-citizen registration rate.",
+  },
+  votingAgeParticipationRate: {
+    label: "Estimated adult electoral participation",
+    unit: "%",
+    definition:
+      "Participating voters / same-year estimated voting-age population × 100. This estimate is distinct from registered-electorate turnout; citizenship and legal eligibility are not established by the population denominator.",
+  },
+  votingAgeParticipationGap: {
+    label: "Estimated adult participation gap",
+    unit: "people",
+    definition:
+      "Same-year estimated voting-age population minus participating voters. Includes adults outside the effective electorate and its nonparticipating members; it is not an exact count of eligible citizens who abstained.",
+  },
+  votingAgeParticipationGapRate: {
+    label: "Estimated adult nonparticipation",
+    unit: "%",
+    definition:
+      "Estimated adult participation gap / same-year estimated voting-age population × 100. The denominator's estimation and eligibility limitations carry through to the rate.",
+  },
+  votingAgeOutsideElectorate: {
+    label: "Estimated adults outside electorate",
+    unit: "people",
+    definition:
+      "Same-year estimated voting-age population minus the effective election electorate, including MEC7 additions. This segment can include ineligible residents and is not an exact eligible-unregistered count.",
+  },
 } as const;
 
 export type ExplorerMetric = keyof typeof explorerMetrics;
@@ -80,6 +146,21 @@ export function metricValue(
   record: ElectionRecord,
   metric: ExplorerMetric,
 ): number | null {
+  if (
+    metric === "electorateParticipationGap" ||
+    metric === "electorateParticipationGapRate" ||
+    metric === "participationGap" ||
+    metric === "participationGapRate" ||
+    metric === "registrationGap" ||
+    metric === "votingAgeRegistrationCoverage" ||
+    metric === "votingAgeParticipationRate" ||
+    metric === "votingAgeParticipationGap" ||
+    metric === "votingAgeParticipationGapRate" ||
+    metric === "votingAgeOutsideElectorate"
+  )
+    return electionMetrics(record)[metric];
+  if (metric === "votingAgePopulation")
+    return record.votingAgePopulation ?? null;
   if (metric === "registrationRate")
     return electionMetrics(record).registrationRate;
   if (metric === "turnoutDenominator") return effectiveElectorate(record);

@@ -6,16 +6,22 @@ import AnimatedBar from "./animated-bar";
 import {
   currentAgeRegistration,
   historicAgeRegistration,
+  historicAgeTurnout,
+  currentProvinceRegistration,
   currentRegistrationObservation,
   provinces,
 } from "@/lib/data";
-import { percentageChange } from "@/lib/analytics";
+import { percentageChange, youthRegistrationBounds } from "@/lib/analytics";
 import { formatNumber } from "@/lib/utils";
 import AnalyticsChart from "./analytics-chart";
 export default function YouthLab({ expanded = false }: { expanded?: boolean }) {
   const [age, setAge] = useState("20–29");
   const selected = currentAgeRegistration.find((r) => r.ageGroup === age)!;
   const historic = historicAgeRegistration.find((r) => r.ageGroup === age);
+  const historicParticipation = historicAgeTurnout.find(
+    (r) => r.ageGroup === age,
+  );
+  const youthBounds = youthRegistrationBounds(currentAgeRegistration);
   const growth = percentageChange(selected.registered, historic?.registered);
   const max = Math.max(...currentAgeRegistration.map((r) => r.registered));
   const option = useMemo(
@@ -126,7 +132,12 @@ export default function YouthLab({ expanded = false }: { expanded?: boolean }) {
               >
                 Accessible age-profile table
               </summary>
-              <div className="table-scroll">
+              <div
+                className="table-scroll"
+                tabIndex={0}
+                role="region"
+                aria-label="Scrollable age-profile data"
+              >
                 <table className="data-table">
                   <caption className="sr-only">
                     Registered voters by published IEC age bands, 29 September
@@ -174,6 +185,12 @@ export default function YouthLab({ expanded = false }: { expanded?: boolean }) {
                 % of the national voters’ roll.
               </p>
               <div className="breakdown-list" style={{ marginTop: 25 }}>
+                <div className="breakdown-row">
+                  <span>2016 published age-band turnout</span>
+                  <span className="mono">
+                    {historicParticipation?.turnout ?? "—"}% · rounded
+                  </span>
+                </div>
                 <div className="breakdown-row">
                   <span>Eligible citizens in this age band</span>
                   <span className="mono">—</span>
@@ -265,34 +282,147 @@ export default function YouthLab({ expanded = false }: { expanded?: boolean }) {
             </div>
             <div className="panel">
               <div className="panel-header">
-                <h2>Provincial youth coverage</h2>
-                <span className="badge badge-amber">
-                  EXACT 18–35 UNAVAILABLE
+                <h2>Provincial registration context</h2>
+                <span className="badge badge-lime">
+                  ALL-AGE PROVINCE SNAPSHOT
                 </span>
               </div>
               <div className="province-grid">
                 {provinces.map((p) => (
                   <div className="province-mini" key={p}>
                     {p}
-                    <strong>—</strong>
-                    <span>Eligible and registered 18–35 unavailable</span>
+                    <strong>
+                      {formatNumber(
+                        currentProvinceRegistration.find(
+                          (row) => row.province === p,
+                        )?.registered,
+                        true,
+                      )}
+                    </strong>
+                    <span>Registered · all ages · 29 Sep 2026</span>
                   </div>
                 ))}
               </div>
               <div className="data-notice">
-                Province totals for all ages are available in the map and
-                explorer. They are not substituted for province-level youth
-                figures.
+                These are verified all-age province totals, not province-level
+                youth figures. Exact province-by-age registrations remain
+                unavailable.{" "}
+                <Link className="text-link" href="/map">
+                  Explore the province map ↗
+                </Link>
               </div>
               <h3 style={{ margin: "25px 0 13px" }}>
-                Youth versus older voters
+                What can we establish about ages 18–35?
               </h3>
-              <p className="empty-state">
-                Official comparable data unavailable. The published 30–39 band
-                cannot be split into 30–35 and 36–39 without reliable underlying
-                data.
+              <p className="muted">
+                Registered ages 18–35 lie between{" "}
+                <strong className="lime">
+                  {formatNumber(youthBounds?.lower)} and{" "}
+                  {formatNumber(youthBounds?.upper)}
+                </strong>{" "}
+                in the September 2026 snapshot.
               </p>
+              <p className="data-notice">
+                The lower bound includes every registered person aged 18–29. The
+                upper bound includes all registered people aged 18–39. The
+                unknown 30–35 share lies inside the 30–39 band. These are
+                logical limits, not a confidence interval or a best estimate.
+                Exact eligible youth and youth registration rates remain
+                unverified.
+              </p>
+              <Link
+                className="text-link"
+                href="/comparison?mode=ages&metric=registered"
+              >
+                Compare original published age bands ↗
+              </Link>
             </div>
+          </section>
+          <section className="section panel">
+            <div className="panel-header">
+              <div>
+                <p className="eyebrow">VERIFIED HISTORICAL AGE PARTICIPATION</p>
+                <h2>2016 turnout by published age band</h2>
+                <p>
+                  Rounded IEC percentages. These describe the 2016 election, not
+                  the September 2026 registration snapshot.
+                </p>
+              </div>
+              <Link
+                className="text-link"
+                href="/comparison?mode=ages&metric=turnout&ageYearA=2016&ageYearB=2016"
+              >
+                Compare historical age turnout ↗
+              </Link>
+            </div>
+            <AnalyticsChart
+              label="IEC 2016 municipal turnout:18–19 71%,20–29 50%,30–39 50%,40–49 59%,50–59 69%,60–69 73%,70–79 67%,80+46%; published whole percentages"
+              option={{
+                grid: { left: 45, right: 18, bottom: 35, top: 22 },
+                tooltip: {
+                  trigger: "axis",
+                  valueFormatter: (value) =>
+                    `${value}% (published rounded rate)`,
+                },
+                xAxis: {
+                  type: "category",
+                  data: historicAgeTurnout.map((row) => row.ageGroup),
+                  axisLabel: { color: "#94a3b8" },
+                },
+                yAxis: {
+                  type: "value",
+                  max: 100,
+                  axisLabel: { color: "#94a3b8", formatter: "{value}%" },
+                  splitLine: { lineStyle: { color: "#29374c" } },
+                },
+                series: [
+                  {
+                    type: "bar",
+                    data: historicAgeTurnout.map((row) => ({
+                      value: row.turnout,
+                      itemStyle: {
+                        color: row.ageGroup === age ? "#b9f56a" : "#62a7f8",
+                      },
+                    })),
+                    barMaxWidth: 36,
+                  },
+                ],
+              }}
+            />
+            <div
+              className="table-scroll"
+              tabIndex={0}
+              role="region"
+              aria-label="Scrollable age-profile data"
+            >
+              <table className="data-table">
+                <caption className="sr-only">
+                  2016 published age turnout, rounded whole percentages
+                </caption>
+                <thead>
+                  <tr>
+                    <th>Original age band</th>
+                    <th>2016 published turnout</th>
+                    <th>Precision</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {historicAgeTurnout.map((row) => (
+                    <tr key={row.ageGroup}>
+                      <td>{row.ageGroup}</td>
+                      <td>{row.turnout}%</td>
+                      <td>Whole percent; exact voter count not inferred</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="data-notice">
+              Source: IEC 2016 Municipal Elections Report, Figure 14 (printed
+              page 75). Rounded percentages cannot reconstruct exact
+              participating-person counts. Original bands do not provide an
+              exact 18–35 turnout rate.
+            </p>
           </section>
         </>
       )}

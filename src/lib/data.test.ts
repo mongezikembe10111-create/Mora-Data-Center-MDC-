@@ -7,10 +7,12 @@ import {
   electionMetrics,
   nonVoters,
   participationGap,
+  participationBreakdown,
   percentageChange,
   percentagePointChange,
   registrationRate,
   turnoutRate,
+  youthRegistrationBounds,
 } from "./analytics";
 import {
   currentAgeRegistration,
@@ -19,6 +21,7 @@ import {
   elections,
   getElection,
   historicAgeRegistration,
+  historicAgeTurnout,
   provinceElections,
   referenceObservations,
   sources,
@@ -26,6 +29,7 @@ import {
 } from "./data";
 import {
   ageRegistrationRecordSchema,
+  ageTurnoutRecordSchema,
   electionRecordSchema,
   validateDataset,
   validateProvinceElections,
@@ -215,6 +219,8 @@ test("unverified observations cannot be published through a source registry entr
     voters: null,
     turnout: null,
     turnoutDenominator: null,
+    participationComparisonDenominator: null,
+    votingAgePopulation: null,
   }));
   assert.doesNotThrow(() => validateDataset(noData, unverifiedSources));
 });
@@ -373,6 +379,73 @@ test("historical age groups retain original categories and reconcile with the ce
   );
 });
 
+test("2016 age turnout preserves original whole-percent published rates without inventing counts", () => {
+  assert.deepEqual(
+    historicAgeTurnout.map((row) => row.turnout),
+    [71, 50, 50, 59, 69, 73, 67, 46],
+  );
+  assert.deepEqual(
+    historicAgeTurnout.map((row) => row.ageGroup),
+    historicAgeRegistration.map((row) => row.ageGroup),
+  );
+  for (const row of historicAgeTurnout) {
+    ageTurnoutRecordSchema.parse(row);
+    assert.equal(row.observedAt, "2016-08-03");
+    assert.equal(row.precision, "whole-percent");
+    assert.ok(sources.find((source) => source.id === row.sourceId)?.verified);
+    assert.match(row.note, /printed page 75 \(PDF page 45/);
+    assert.equal("voters" in row, false);
+  }
+});
+
+test("18–35 youth registration bounds preserve the unknown portion of the 30–39 band", () => {
+  const current = youthRegistrationBounds(currentAgeRegistration)!;
+  assert.equal(current.lower, 5_532_873);
+  assert.equal(current.upper, 12_308_457);
+  assert.equal(current.exact, false);
+  assert.equal(current.observedAt, "2026-09-29");
+  assert.equal(current.sourceId, currentRegistrationObservation.sourceId);
+  const historical = youthRegistrationBounds(historicAgeRegistration)!;
+  assert.equal(historical.lower, 6_283_160);
+  assert.equal(historical.upper, 12_718_495);
+  assert.match(
+    current.note,
+    /not a point estimate or statistical confidence interval/,
+  );
+  assert.match(current.note, /overlapping intervals/);
+});
+
+test("youth bounds require all three distinct compatible bands and safe published counts", () => {
+  assert.equal(
+    youthRegistrationBounds(
+      currentAgeRegistration.filter((row) => row.ageGroup !== "30–39"),
+    ),
+    null,
+  );
+  assert.equal(
+    youthRegistrationBounds([
+      ...currentAgeRegistration,
+      currentAgeRegistration[0],
+    ]),
+    null,
+  );
+  const wrongDate = currentAgeRegistration.map((row, index) => ({
+    ...row,
+    observedAt: index === 0 ? "2016" : row.observedAt,
+  }));
+  assert.equal(youthRegistrationBounds(wrongDate), null);
+  const wrongSource = currentAgeRegistration.map((row, index) => ({
+    ...row,
+    sourceId: index === 0 ? "other" : row.sourceId,
+  }));
+  assert.equal(youthRegistrationBounds(wrongSource), null);
+  const impossible = currentAgeRegistration.map((row, index) => ({
+    ...row,
+    registered: index === 0 ? Number.MAX_SAFE_INTEGER : row.registered,
+  }));
+  assert.equal(youthRegistrationBounds(impossible), null);
+});
+
 test("2016 province rows validate and reconcile as people, not ballot papers", () => {
   validateProvinceElections(provinceElections, sources);
   assert.equal(provinceElections.length, 9);
@@ -417,4 +490,139 @@ test("CSV fields escape punctuation, multiline source notes and spreadsheet form
   assert.equal(csvCell("line\nbreak"), '"line\nbreak"');
   assert.equal(csvCell(null), "");
   assert.equal(csvCell(0), "0");
+});
+
+test("electorate participation gap is observed even without an eligible-citizen denominator", () => {
+  const record = getElection(2021)!;
+  const breakdown = participationBreakdown(record);
+  assert.equal(breakdown.denominator, 26_303_168);
+  assert.equal(breakdown.totalGap, 14_239_459);
+  assert.equal(breakdown.outsideElectorate, 0);
+  assert.equal(breakdown.nonVoters, 14_239_459);
+  assert.equal(breakdown.estimated, false);
+  assert.equal(breakdown.qualified, false);
+  assert.equal(electionMetrics(record).participationGap, null);
+  assert.equal(electionMetrics(record).electorateParticipationGap, 14_239_459);
+});
+
+test("2021 adult-population estimate decomposes without promoting residents to eligible citizens", () => {
+  const record = getElection(2021)!;
+  const breakdown = participationBreakdown(record, "voting-age");
+  assert.equal(record.votingAgePopulation, 38_573_897);
+  assert.equal(record.eligible, null);
+  assert.equal(breakdown.denominator, 38_573_897);
+  assert.equal(breakdown.totalGap, 26_510_188);
+  assert.equal(breakdown.outsideElectorate, 12_270_729);
+  assert.equal(breakdown.nonVoters, 14_239_459);
+  assert.equal(breakdown.estimated, true);
+  assert.equal(breakdown.sourceId, "iec-municipal-2021");
+  assert.equal(
+    breakdown.outsideElectorate! + breakdown.nonVoters! + breakdown.voters!,
+    breakdown.denominator,
+  );
+  assert.equal(
+    breakdown.totalGap,
+    breakdown.outsideElectorate! + breakdown.nonVoters!,
+  );
+  assert.ok(breakdown.caveats.some((note) => /ineligible/.test(note)));
+  assert.ok(Math.abs(breakdown.participationRate! - 31.27429) < 0.0001);
+  assert.ok(
+    Math.abs(
+      electionMetrics(record).votingAgeRegistrationCoverage! - 67.93345,
+    ) < 0.0001,
+  );
+  assert.equal(electionMetrics(record).registrationRate, null);
+  assert.equal(participationBreakdown(record, "eligible").totalGap, null);
+});
+
+test("2000 certified-roll gap is available as a qualified count comparison with unresolved turnout intact", () => {
+  const record = getElection(2000)!;
+  const breakdown = participationBreakdown(record);
+  assert.equal(breakdown.totalGap, 9_593_782);
+  assert.equal(breakdown.denominator, 18_476_516);
+  assert.equal(breakdown.qualified, true);
+  assert.equal(breakdown.denominatorBasis, "certified-roll-comparison");
+  assert.equal(breakdown.estimated, false);
+  assert.equal(effectiveTurnoutElectorate(record), null);
+  assert.equal(electionMetrics(record).nonVoters, null);
+  assert.equal(electionMetrics(record).turnoutRate, 48.06);
+  assert.ok(
+    breakdown.caveats.some((note) => /Source totals differ/.test(note)),
+  );
+});
+
+test("estimated population partition rejects absent and incompatible denominators", () => {
+  assert.equal(
+    participationBreakdown(getElection(2016)!, "voting-age").totalGap,
+    null,
+  );
+  assert.equal(participationBreakdown(getElection(2006)!).totalGap, null);
+  assert.equal(
+    participationBreakdown(
+      { ...syntheticRecord, votingAgePopulation: 700 },
+      "voting-age",
+    ).totalGap,
+    null,
+  );
+  assert.equal(
+    participationBreakdown({ ...syntheticRecord, voters: 900 }).totalGap,
+    null,
+  );
+});
+
+test("unreconciled provincial turnout retains a qualified certified-roll count comparison", () => {
+  for (const [province, expected] of [
+    ["Eastern Cape", 1_449_032],
+    ["Limpopo", 1_268_415],
+  ] as const) {
+    const record = provinceElections.find((row) => row.province === province)!;
+    const breakdown = participationBreakdown(record);
+    assert.equal(breakdown.totalGap, expected);
+    assert.equal(breakdown.qualified, true);
+    assert.equal(breakdown.denominatorBasis, "certified-roll-comparison");
+    assert.equal(effectiveTurnoutElectorate(record), null);
+    assert.equal(electionMetrics(record).nonVoters, null);
+    assert.equal(electionRecordSchema.safeParse(record).success, true);
+  }
+});
+
+test("population-estimate publishing requires dated verified provenance and an explicit limitation", () => {
+  const record = getElection(2021)!;
+  assert.equal(
+    electionRecordSchema.safeParse({
+      ...record,
+      votingAgePopulationNote: undefined,
+    }).success,
+    false,
+  );
+  assert.equal(
+    electionRecordSchema.safeParse({
+      ...record,
+      votingAgePopulationSourceId: undefined,
+    }).success,
+    false,
+  );
+  assert.equal(
+    electionRecordSchema.safeParse({
+      ...record,
+      votingAgePopulation: 20_000_000,
+    }).success,
+    false,
+  );
+  assert.throws(
+    () =>
+      validateDataset(
+        [{ ...record, votingAgePopulationSourceId: "missing" }],
+        sources,
+      ),
+    /Voting-age population estimate requires a verified source/,
+  );
+  assert.throws(
+    () =>
+      validateDataset(
+        [{ ...record, votingAgePopulationSourceId: "iec-municipal-2016" }],
+        sources,
+      ),
+    /estimate and election years must agree/,
+  );
 });

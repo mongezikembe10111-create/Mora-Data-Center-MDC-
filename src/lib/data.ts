@@ -10,11 +10,17 @@ export type ElectionRecord = {
   voters: number | null;
   validBallots: number | null;
   eligible: number | null;
+  /** A dated population estimate, distinct from legally eligible citizens. */
+  votingAgePopulation?: number | null;
+  votingAgePopulationSourceId?: string;
+  votingAgePopulationNote?: string;
   turnout: number | null;
   /** Effective IEC population including MEC7 additions, where established. */
   turnoutDenominator?: number | null;
   /** Undefined preserves the legacy effective-electorate convention. */
   turnoutBasis?: TurnoutBasis;
+  /** A disclosed count comparison where the turnout denominator is unreconciled. */
+  participationComparisonDenominator?: number | null;
   sourceId: string;
   note?: string;
 };
@@ -50,11 +56,11 @@ export type ReferenceObservation = {
 
 export const DATA_UNAVAILABLE = "Official comparable data unavailable.";
 export const verificationStatus = {
-  checkedAt: "2026-10-11",
-  lastVerifiedAt: "2026-10-11" as string | null,
+  checkedAt: "2026-10-12",
+  lastVerifiedAt: "2026-10-12" as string | null,
   status: "official-sources-verified" as const,
   explanation:
-    "Historical municipal figures and the 29 September 2026 registration snapshot were checked against official IEC publications. Eligible-citizen denominators, exact youth 18–35 splits and missing regional series remain unavailable.",
+    "Historical municipal figures and the 29 September 2026 registration snapshot were checked against official IEC publications. The retained official reports were re-examined on 12 October 2026 to add the 2021 estimated voting-age population, qualified source-count comparisons and published 2016 age-turnout rates. Eligible-citizen denominators, exact youth 18–35 splits and missing regional series remain unavailable.",
 };
 
 export const municipalYears = [2000, 2006, 2011, 2016, 2021] as const;
@@ -70,7 +76,12 @@ export const sources: SourceRecord[] = municipalYears.map((year) => ({
   publishedAt: null,
   observedAt: String(year),
   retrievedAt: "2026-10-11",
-  coverage: "South Africa; municipal elections; national aggregate",
+  coverage:
+    year === 2016
+      ? "South Africa; municipal elections; national aggregate, nine provinces, registration age bands and rounded age-turnout rates"
+      : year === 2021
+        ? "South Africa; municipal elections; national aggregate and a same-year official voting-age population estimate"
+        : "South Africa; municipal elections; national aggregate",
   ageCoverage:
     "All registered voting ages; 2016 report also publishes eight age bands from 18–19 to 80+",
   units:
@@ -82,7 +93,7 @@ export const sources: SourceRecord[] = municipalYears.map((year) => ({
         ? "The 2000 report publishes 8,882,734 participating voters and 48.06% turnout, but its turnout table gives a different registered total from later IEC certified-roll comparisons. Counts and published rate are preserved independently; no reconciled person-turnout denominator or directly comparable rate change is inferred."
         : "Certified voters’ roll counts and IEC-reported participating-voter counts are transcribed independently from the report. Published municipal turnout is preserved. For 2011, 2016 and 2021 the operational numerator is the highest of Ward or PR votes and the denominator includes certified-roll entries plus reported MEC7 additions. All-ballot totals are never substituted for participating voters.",
   limitations: [
-    "No compatible legally eligible-citizen denominator is available; registration and participation-gap rates remain unavailable.",
+    "No compatible legally eligible-citizen denominator is available; eligible-citizen registration and participation-gap rates remain unavailable. Registered-electorate gaps and explicitly labelled voting-age-population estimates are separate measures.",
     "Valid ballots are not a comparable person-level funnel stage when voters receive two or three municipal ballot papers.",
     ...(year === 2000
       ? [
@@ -94,9 +105,15 @@ export const sources: SourceRecord[] = municipalYears.map((year) => ({
           "Published 48.40% turnout has a ballot-pool basis with unequal ballot papers per person; it cannot establish person-level turnout or registered-person abstention, and is not directly comparable with the 2011–2021 effective-electorate rates.",
         ]
       : []),
+    ...(year === 2016
+      ? [
+          "Figure 14 (printed page 75; PDF page 45, right-hand page of a two-page spread) publishes rounded whole-percent turnout for eight original age bands. Exact age-specific participating-voter counts and detailed denominator reconciliation are not supplied and must not be reconstructed from these rates.",
+        ]
+      : []),
     ...(year === 2021
       ? [
           "The report narrative gives 12,063,886 participating voters; its results appendix gives 12,063,709. The results-appendix figure is retained and the discrepancy is disclosed.",
+          "The report also cites a Stats SA estimated voting-age population of 38,573,897 (printed page 54). It is a population estimate, not a verified legal-eligibility/citizenship count; derived adult-population coverage and gaps remain estimates. The report provides no uncertainty interval or exact estimate reference day.",
         ]
       : []),
   ],
@@ -113,7 +130,8 @@ const historicCounts = [
     turnout: 48.06,
     turnoutBasis: "unreconciled" as const,
     turnoutDenominator: null,
-    note: "Certified roll from the 2016 IEC report’s historical comparison; 2000 report turnout retained. The 2000 turnout table uses a different roll total; no reconciled denominator or directly comparable turnout-rate change is inferred.",
+    participationComparisonDenominator: 18_476_516,
+    note: "Certified roll from the 2016 IEC report’s historical comparison; 2000 report turnout retained. The certified roll minus the published participating-voter count is a qualified count comparison, not the operational turnout denominator. The 2000 report itself prints 18,476,519 at certification and 18,511,975 in its turnout table; no reconciled turnout denominator or directly comparable turnout-rate change is inferred.",
   },
   {
     year: 2006,
@@ -159,6 +177,14 @@ export const elections: ElectionRecord[] = historicCounts.map((record) => ({
   type: "municipal",
   validBallots: null,
   eligible: null,
+  votingAgePopulation: record.year === 2021 ? 38_573_897 : null,
+  ...(record.year === 2021
+    ? {
+        votingAgePopulationSourceId: "iec-municipal-2021",
+        votingAgePopulationNote:
+          "The IEC 2021 report (printed page 54) cites Statistics South Africa's estimated voting-age population of 38,573,897. This is a same-election-year adult-population benchmark, not a verified count of voting-eligible South African citizens. The report supplies no uncertainty interval or exact population estimate reference day.",
+      }
+    : {}),
   sourceId: `iec-municipal-${record.year}`,
 }));
 
@@ -317,6 +343,27 @@ export const historicAgeRegistration: AgeRegistrationRecord[] = ageGroups.map(
   }),
 );
 
+export type AgeTurnoutRecord = {
+  ageGroup: (typeof ageGroups)[number];
+  turnout: number;
+  observedAt: string;
+  sourceId: string;
+  precision: "whole-percent";
+  note: string;
+};
+
+/** Published rates, never reconstructed participating-voter counts. */
+export const historicAgeTurnout: AgeTurnoutRecord[] = ageGroups.map(
+  (ageGroup, index) => ({
+    ageGroup,
+    turnout: [71, 50, 50, 59, 69, 73, 67, 46][index],
+    observedAt: "2016-08-03",
+    sourceId: "iec-municipal-2016",
+    precision: "whole-percent",
+    note: "IEC 2016 Local Government Elections Report, Figure 14 on printed page 75 (PDF page 45, right-hand page of a two-page spread). Published registered-electorate turnout by age, rounded to whole percentages; it is not a voting-age-population or eligible-citizen rate. The figure does not supply exact age-specific participating-voter counts or its detailed age-denominator reconciliation, so those counts are not reconstructed. This historical observation does not describe the 2026 roll or the same individuals ten years later.",
+  }),
+);
+
 export type ProvinceRegistrationRecord = {
   province: string;
   registered: number;
@@ -380,6 +427,9 @@ export const provinceElections: ProvinceElectionRecord[] =
       province === "Eastern Cape" || province === "Limpopo"
         ? null
         : registered + mec7,
+    ...(province === "Eastern Cape" || province === "Limpopo"
+      ? { participationComparisonDenominator: registered }
+      : {}),
     validBallots: null,
     eligible: null,
     sourceId: "iec-municipal-2016",

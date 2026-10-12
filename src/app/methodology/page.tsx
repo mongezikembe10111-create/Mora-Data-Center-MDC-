@@ -65,9 +65,25 @@ const calculations = [
     note: "Keep this separate from the participation gap. Incompatible dated observations cannot support a precise current gap.",
   },
   {
-    title: "Participation gap",
+    title: "Eligible-citizen participation gap",
     formula: "eligible citizens − participating voters",
     note: "The percentage form divides this gap by the compatible eligible-citizen population. Missing data is not zero.",
+  },
+  {
+    title: "Documented electorate participation gap",
+    formula: "effective election electorate − participating voters",
+    note: "Shows nonparticipation within the documented electorate, excluding people outside it. Qualified certified-roll comparisons can be shown for 2000 and conflicting 2016 provincial tables, with the difference disclosed rather than described as a reconciled operational rate.",
+  },
+  {
+    title: "Estimated adult-population participation gap",
+    formula: "same-year estimated voting-age residents − participating voters",
+    note: "The 2021 IEC report gives a Stats SA voting-age population estimate of 38,573,897. Adult residents include non-citizens; this is not a legally eligible citizen denominator. The derived gap inherits the estimate’s uncertainty. Never apply it to the 2026 roll or another geography.",
+  },
+  {
+    title: "Estimated adult-population gap decomposition",
+    formula:
+      "adults outside effective electorate + electorate nonparticipants = adult-population gap",
+    note: "For 2021: 12,270,729 estimated adults outside the effective electorate + 14,239,459 recorded electorate nonparticipants = 26,510,188. The outside-electorate segment is not an exact count of eligible unregistered citizens.",
   },
   {
     title: "Percentage-point change",
@@ -164,7 +180,7 @@ export default function MethodologyPage() {
       <section style={{ marginTop: 42 }} aria-labelledby="definitions-heading">
         <p className="eyebrow">The language of participation</p>
         <h2 className="section-title" id="definitions-heading">
-          Six distinctions that stay with the data.
+          Distinctions that stay with the data.
         </h2>
         <div className="panel">
           {definitions.map(([title, description]) => (

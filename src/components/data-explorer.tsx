@@ -18,6 +18,7 @@ import {
   currentRegistrationObservation,
   elections,
   historicAgeRegistration,
+  historicAgeTurnout,
   provinceElections,
   provinces,
   sources,
@@ -36,6 +37,7 @@ import {
   type ExplorerMetric,
 } from "@/lib/explorer-metrics";
 import ElectionChart, { downloadBlob } from "@/components/election-chart";
+import { participationBreakdown } from "@/lib/analytics";
 
 const ageBrackets = [...ageGroups];
 const chartTypes: ExplorerChartType[] = ["line", "bar", "area", "scatter"];
@@ -63,10 +65,62 @@ type ExplorerRow = ElectionRecord & {
   ageBracket: string;
   referenceDate: string;
   rowKind: "election" | "registration";
+  publishedPrecision?: "whole-percent";
 };
 
 function sourceFor(record: ElectionRecord) {
   return sources.find((source) => source.id === record.sourceId);
+}
+
+function isVotingAgeMetric(metric: ExplorerMetric) {
+  return metric.startsWith("votingAge");
+}
+
+function populationSourceFor(record: ElectionRecord) {
+  return sources.find(
+    (source) => source.id === record.votingAgePopulationSourceId,
+  );
+}
+
+function metricQualification(record: ElectionRecord, metric: ExplorerMetric) {
+  if (metric === "turnout") {
+    if (turnoutBasis(record) === "ballot-pool") return "ballot-pool";
+    if (
+      turnoutBasis(record) === "unreconciled" ||
+      effectiveElectorate(record) === null
+    )
+      return "unreconciled";
+  }
+  if (
+    [
+      "electorateParticipationGap",
+      "electorateParticipationGapRate",
+      "votingAgeParticipationRate",
+      "votingAgeParticipationGap",
+      "votingAgeParticipationGapRate",
+      "votingAgeOutsideElectorate",
+    ].includes(metric) &&
+    participationBreakdown(record).qualified
+  )
+    return "certified-roll-comparison";
+  return null;
+}
+
+function metricNotes(record: ElectionRecord, metric: ExplorerMetric) {
+  return [
+    record.note,
+    ...(isVotingAgeMetric(metric)
+      ? [
+          record.votingAgePopulationNote ||
+            "No same-year voting-age population estimate is verified for this geography. A national estimate is never substituted for a province or age band.",
+        ]
+      : []),
+    ...(metricQualification(record, metric) === "certified-roll-comparison"
+      ? participationBreakdown(record).caveats
+      : []),
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 export default function DataExplorer({
@@ -166,25 +220,51 @@ export default function DataExplorer({
 
   const hasUnsupportedScope =
     filters.municipality !== "all" ||
-    (filters.dataset === "elections" && filters.age !== "all") ||
-    (filters.dataset === "registration" &&
-      filters.province !== "all" &&
-      filters.age !== "all");
+    (filters.province !== "all" && filters.age !== "all");
   const rows = useMemo<ExplorerRow[]>(() => {
     if (hasUnsupportedScope) return [];
     const search = filters.search.trim().toLowerCase();
     const geography =
       filters.province === "all" ? "South Africa" : filters.province;
     const ageBracket = filters.age === "all" ? "All ages" : filters.age;
-    const observations: (ElectionRecord & { referenceDate?: string })[] = [];
+    const observations: (ElectionRecord & {
+      referenceDate?: string;
+      publishedPrecision?: "whole-percent";
+    })[] = [];
     if (filters.dataset === "elections") {
-      observations.push(
-        ...(filters.province === "all"
-          ? elections
-          : provinceElections.filter(
-              (record) => record.province === filters.province,
-            )),
-      );
+      if (filters.age !== "all") {
+        for (const observation of historicAgeTurnout.filter(
+          (item) => item.ageGroup === filters.age,
+        )) {
+          const registration = historicAgeRegistration.find(
+            (item) => item.ageGroup === observation.ageGroup,
+          );
+          observations.push({
+            year: 2016,
+            label: `2016 municipal election · age ${observation.ageGroup}`,
+            type: "municipal",
+            registered: registration?.registered ?? null,
+            voters: null,
+            eligible: null,
+            validBallots: null,
+            turnout: observation.turnout,
+            turnoutDenominator: null,
+            turnoutBasis: "unreconciled",
+            sourceId: observation.sourceId,
+            referenceDate: observation.observedAt,
+            publishedPrecision: observation.precision,
+            note: observation.note,
+          });
+        }
+      } else {
+        observations.push(
+          ...(filters.province === "all"
+            ? elections
+            : provinceElections.filter(
+                (record) => record.province === filters.province,
+              )),
+        );
+      }
     } else {
       const snapshot = (
         registered: number,
@@ -286,18 +366,48 @@ export default function DataExplorer({
   }, [filters, hasUnsupportedScope]);
   const plotted = rows.filter((row) => row.selectedValue !== null);
   const metric = explorerMetrics[filters.metric];
-  const sourceIds = [...new Set(rows.map((row) => row.sourceId))];
+  const sourceIds = [
+    ...new Set(
+      rows.flatMap((row) => [
+        row.sourceId,
+        ...(isVotingAgeMetric(filters.metric) && row.votingAgePopulationSourceId
+          ? [row.votingAgePopulationSourceId]
+          : []),
+      ]),
+    ),
+  ];
+  const qualifiedRows = plotted.filter(
+    (row) => metricQualification(row, filters.metric) !== null,
+  );
+  const populationNotes = isVotingAgeMetric(filters.metric)
+    ? [
+        ...new Set(
+          rows.flatMap((row) =>
+            row.votingAgePopulationNote
+              ? [
+                  `${row.year} population benchmark source: ${row.votingAgePopulationSourceId}; ${populationSourceFor(row)?.url || "source URL unavailable"}. ${row.votingAgePopulationNote}`,
+                ]
+              : [],
+          ),
+        ),
+      ]
+    : [];
+  const qualificationNotes = qualifiedRows.map((row) =>
+    metricQualification(row, filters.metric) === "certified-roll-comparison"
+      ? `${row.year} ${row.geography}: qualified certified-roll comparison; denominator ${row.participationComparisonDenominator?.toLocaleString("en-ZA")} people. ${participationBreakdown(row).caveats.join(" ")}`
+      : `${row.year} ${row.geography}: published ${metricQualification(row, filters.metric)} turnout observation, shown separately from reconciled effective-electorate rates. ${row.note || ""}`,
+  );
   const sourceNote = sourceIds.length
     ? `Sources: ${sourceIds
         .map((id) => {
           const source = sources.find((item) => item.id === id);
           return source
-            ? `${source.organisation} — ${source.title} (observed ${source.observedAt})`
+            ? `${source.organisation} — ${source.title} (observed ${source.observedAt}); ${source.url}`
             : id;
         })
         .join(
           "; ",
-        )}. Reference: dates shown in the table. Geography: ${filters.province === "all" ? "South Africa" : filters.province}. Age coverage: ${filters.age === "all" ? "all ages" : filters.age}.`
+        )}. Reference: dates shown in the table. Geography: ${filters.province === "all" ? "South Africa" : filters.province}. Age coverage: ${filters.age === "all" ? "all ages" : filters.age}. ${populationNotes.join(" ")} ${qualificationNotes.join(" ")}`
     : "Source: MORA source registry. No verified observations available for the selected scope.";
 
   const option = useMemo<EChartsOption>(() => {
@@ -306,6 +416,11 @@ export default function DataExplorer({
       new Set(chronological.map((record) => record.year)),
     );
     const percentage = explorerMetrics[filters.metric].unit === "%";
+    const qualifications = [
+      "ballot-pool",
+      "unreconciled",
+      "certified-roll-comparison",
+    ] as const;
     return {
       backgroundColor: "transparent",
       textStyle: { fontFamily: "Inter, Arial, sans-serif", color: "#94A3B8" },
@@ -322,7 +437,9 @@ export default function DataExplorer({
         textStyle: { color: "#F5F7FB" },
         valueFormatter: (value) =>
           typeof value === "number"
-            ? formatMetric(value, filters.metric)
+            ? filters.metric === "turnout" && filters.age !== "all"
+              ? `${value.toFixed(0)}% (published whole percent)`
+              : formatMetric(value, filters.metric)
             : "Unavailable",
       },
       xAxis: {
@@ -367,10 +484,7 @@ export default function DataExplorer({
                 (item) => item.year === year && item.type === type,
               );
               return record &&
-                !(
-                  filters.metric === "turnout" &&
-                  turnoutBasis(record) !== "effective-electorate"
-                )
+                metricQualification(record, filters.metric) === null
                 ? record.selectedValue
                 : null;
             }),
@@ -390,34 +504,48 @@ export default function DataExplorer({
             barMaxWidth: 34,
             emphasis: { focus: "series" as const },
           })),
-        ...(["ballot-pool", "unreconciled"] as const)
-          .filter(
-            (basis) =>
-              filters.metric === "turnout" &&
-              chronological.some((record) => turnoutBasis(record) === basis),
+        ...qualifications
+          .filter((basis) =>
+            chronological.some(
+              (record) =>
+                record.selectedValue !== null &&
+                metricQualification(record, filters.metric) === basis,
+            ),
           )
           .map((basis) => ({
             name:
               basis === "ballot-pool"
-                ? "2006 · ballot-pool basis"
-                : "2000 · unreconciled denominator",
+                ? "Published ballot-pool rate"
+                : basis === "certified-roll-comparison"
+                  ? "Qualified certified-roll comparison"
+                  : filters.age !== "all"
+                    ? "Published age turnout · whole percent"
+                    : "Published rate · unreconciled denominator",
             type: "scatter" as const,
             data: xYears.map(
               (year) =>
                 chronological.find(
                   (record) =>
-                    record.year === year && turnoutBasis(record) === basis,
+                    record.year === year &&
+                    metricQualification(record, filters.metric) === basis,
                 )?.selectedValue ?? null,
             ),
-            symbol: basis === "ballot-pool" ? "diamond" : "rect",
+            symbol: basis === "unreconciled" ? "rect" : "diamond",
             symbolSize: 11,
             itemStyle: {
-              color: basis === "ballot-pool" ? "#F4B76A" : "#94A3B8",
+              color: basis === "unreconciled" ? "#94A3B8" : "#F4B76A",
             },
           })),
       ],
     };
-  }, [rows, filters.chart, filters.metric, filters.dataset, filters.province]);
+  }, [
+    rows,
+    filters.chart,
+    filters.metric,
+    filters.dataset,
+    filters.province,
+    filters.age,
+  ]);
 
   const columns = useMemo<ColumnDef<ExplorerRow>[]>(
     () => [
@@ -461,13 +589,43 @@ export default function DataExplorer({
                 : undefined
             }
           >
-            {formatMetric(row.original.selectedValue, filters.metric)}
+            {filters.metric === "turnout" &&
+            row.original.publishedPrecision === "whole-percent" &&
+            row.original.selectedValue !== null
+              ? `${row.original.selectedValue.toFixed(0)}%`
+              : formatMetric(row.original.selectedValue, filters.metric)}
             {filters.metric === "turnout" &&
               turnoutBasis(row.original) === "ballot-pool" && (
                 <small
                   style={{ display: "block", color: "#F4B76A", fontSize: 10 }}
                 >
                   Ballot-pool denominator
+                </small>
+              )}
+            {metricQualification(row.original, filters.metric) ===
+              "certified-roll-comparison" && (
+              <small
+                style={{ display: "block", color: "#F4B76A", fontSize: 10 }}
+              >
+                Qualified certified-roll comparison
+              </small>
+            )}
+            {isVotingAgeMetric(filters.metric) &&
+              row.original.selectedValue !== null && (
+                <small
+                  className="muted"
+                  style={{ display: "block", fontSize: 10 }}
+                >
+                  Same-year population estimate
+                </small>
+              )}
+            {filters.metric === "turnout" &&
+              row.original.publishedPrecision === "whole-percent" && (
+                <small
+                  className="muted"
+                  style={{ display: "block", fontSize: 10 }}
+                >
+                  Published whole-percent precision
                 </small>
               )}
           </span>
@@ -478,17 +636,39 @@ export default function DataExplorer({
         header: "Source",
         cell: ({ row }) => {
           const source = sourceFor(row.original);
-          return source ? (
-            <a
-              href={source.url}
-              target="_blank"
-              rel="noreferrer"
-              style={{ fontSize: 11 }}
-            >
-              {source.title} ↗
-            </a>
-          ) : (
-            <span className="muted">Unavailable</span>
+          const populationSource = populationSourceFor(row.original);
+          return (
+            <div>
+              {source ? (
+                <a
+                  href={source.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ fontSize: 11 }}
+                >
+                  {source.title} ↗
+                </a>
+              ) : (
+                <span className="muted">Unavailable</span>
+              )}
+              {isVotingAgeMetric(filters.metric) && (
+                <small style={{ display: "block", fontSize: 10, marginTop: 5 }}>
+                  {populationSource ? (
+                    <a
+                      href={populationSource.url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Population benchmark: {populationSource.title} ↗
+                    </a>
+                  ) : (
+                    <span className="muted">
+                      Population benchmark unavailable
+                    </span>
+                  )}
+                </small>
+              )}
+            </div>
           );
         },
       },
@@ -506,7 +686,7 @@ export default function DataExplorer({
         header: "Notes",
         enableSorting: false,
         cell: ({ row }) =>
-          row.original.note ? (
+          metricNotes(row.original, filters.metric) ? (
             <details style={{ minWidth: 120, maxWidth: 260 }}>
               <summary
                 className="muted"
@@ -518,7 +698,7 @@ export default function DataExplorer({
                 className="muted"
                 style={{ fontSize: 11, marginTop: 9, lineHeight: 1.7 }}
               >
-                {row.original.note}
+                {metricNotes(row.original, filters.metric)}
               </p>
             </details>
           ) : (
@@ -587,6 +767,17 @@ export default function DataExplorer({
       "Source observation date",
       "Verification status",
       "Notes",
+      "Value status",
+      "Count-comparison denominator",
+      "Count-comparison basis",
+      "Population benchmark people",
+      "Population benchmark source ID",
+      "Population benchmark source organisation",
+      "Population benchmark source title",
+      "Population benchmark source URL",
+      "Population benchmark reference",
+      "Population benchmark notes",
+      "Published precision",
     ];
     const keys = allMetrics
       ? (Object.keys(explorerMetrics).filter(
@@ -597,8 +788,13 @@ export default function DataExplorer({
       : [filters.metric];
     const data = table.getRowModel().rows.flatMap(({ original: row }) => {
       const source = sourceFor(row);
-      return keys.map((key) =>
-        [
+      const populationSource = populationSourceFor(row);
+      return keys.map((key) => {
+        const value = metricValue(row, key);
+        const qualification = metricQualification(row, key);
+        const breakdown = participationBreakdown(row);
+        const populationMetric = isVotingAgeMetric(key);
+        return [
           row.year,
           row.rowKind === "registration"
             ? "Registration observation"
@@ -606,7 +802,7 @@ export default function DataExplorer({
           row.geography,
           row.ageBracket,
           explorerMetrics[key].label,
-          metricValue(row, key),
+          value,
           explorerMetrics[key].unit,
           explorerMetrics[key].definition,
           effectiveElectorate(row),
@@ -619,11 +815,44 @@ export default function DataExplorer({
           row.referenceDate,
           source?.observedAt,
           source?.verified ? "Verified source" : "Not verified",
-          row.note || "",
+          metricNotes(row, key),
+          value === null
+            ? "Official comparable data unavailable"
+            : populationMetric
+              ? "Calculated with an official same-year population estimate; legal eligibility is not established"
+              : qualification === "certified-roll-comparison"
+                ? "Qualified certified-roll count comparison"
+                : "Verified source count or documented calculation",
+          breakdown.electorate,
+          breakdown.denominatorBasis,
+          populationMetric
+            ? row.votingAgePopulation
+            : "Not used by this variable",
+          populationMetric
+            ? row.votingAgePopulationSourceId
+            : "Not used by this variable",
+          populationMetric
+            ? populationSource?.organisation
+            : "Not used by this variable",
+          populationMetric
+            ? populationSource?.title
+            : "Not used by this variable",
+          populationMetric
+            ? populationSource?.url
+            : "Not used by this variable",
+          populationMetric
+            ? populationSource?.observedAt
+            : "Not used by this variable",
+          populationMetric
+            ? row.votingAgePopulationNote
+            : "Not used by this variable",
+          key === "turnout" && row.publishedPrecision
+            ? row.publishedPrecision
+            : "As documented in the source",
         ]
           .map(csvCell)
-          .join(","),
-      );
+          .join(",");
+      });
     });
     downloadBlob(
       new Blob(
@@ -647,10 +876,14 @@ export default function DataExplorer({
   }
 
   const emptyDescription = hasUnsupportedScope
-    ? "Municipal detail, age-level turnout and combined province-by-age counts are not verified. Choose the registration dataset for published age bands; national totals are not substituted for smaller groups."
+    ? "Municipal detail and combined province-by-age counts are not verified. National totals are not substituted for smaller groups. Use the municipal directory to find official local information."
     : filters.search.trim()
       ? `No verified geographic observations match “${filters.search}”. Select a suggested province or clear the search.`
-      : `No verified ${metric.label.toLowerCase()} observations match the selected years. Provincial election coverage is currently 2016; registration observations cover 2016 and 29 September 2026.`;
+      : isVotingAgeMetric(filters.metric)
+        ? "A same-year voting-age population benchmark is verified for South Africa's 2021 election only. It is not a count of eligible citizens, and is never applied to provinces, age bands or other election years."
+        : rows.length && !plotted.length
+          ? `The selected observations do not contain the compatible counts needed for ${metric.label.toLowerCase()}. Published age turnout is available for 2016, but exact age-specific voters and denominators are not reconstructed from rounded rates.`
+          : `No verified ${metric.label.toLowerCase()} observations match the selected years. Provincial election coverage and published age-band turnout are currently 2016; registration observations cover 2016 and 29 September 2026.`;
 
   return (
     <div className="explorer-workspace">
@@ -918,7 +1151,53 @@ export default function DataExplorer({
           <Link className="text-link" href="/map">
             Provincial map
           </Link>
+          {" · "}
+          <Link className="text-link" href="/participation">
+            Public participation opportunities
+          </Link>
+          {" · "}
+          <Link className="text-link" href="/municipalities">
+            Municipal participation directory
+          </Link>
         </p>
+        {filters.dataset === "elections" && (
+          <div
+            className="toolbar"
+            role="group"
+            aria-label="Participation gap measures"
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 8,
+              marginBottom: 16,
+            }}
+          >
+            <button
+              type="button"
+              className="button button-secondary"
+              aria-pressed={filters.metric === "electorateParticipationGap"}
+              onClick={() => update("metric", "electorateParticipationGap")}
+            >
+              Electorate participation gap
+            </button>
+            <button
+              type="button"
+              className="button button-secondary"
+              aria-pressed={filters.metric === "electorateParticipationGapRate"}
+              onClick={() => update("metric", "electorateParticipationGapRate")}
+            >
+              Electorate nonparticipation rate
+            </button>
+            <button
+              type="button"
+              className="button button-secondary"
+              aria-pressed={filters.metric === "votingAgeParticipationGap"}
+              onClick={() => update("metric", "votingAgeParticipationGap")}
+            >
+              Estimated adult participation gap
+            </button>
+          </div>
+        )}
         <p className="muted" style={{ fontSize: 12, lineHeight: 1.7 }}>
           {metric.definition}{" "}
           {filters.dataset === "elections"
@@ -935,13 +1214,60 @@ export default function DataExplorer({
             </p>
           )}
         {filters.metric === "turnout" &&
-          rows.some((record) => turnoutBasis(record) === "unreconciled") && (
+          rows.some(
+            (record) =>
+              metricQualification(record, filters.metric) === "unreconciled",
+          ) && (
             <p className="muted" style={{ fontSize: 12 }}>
-              The 2000 published rate is a separate grey square because its
-              electorate denominator is unreconciled. Person-level abstention
-              and turnout-rate changes are unavailable for that observation.
+              Grey squares preserve published rates whose person-level count
+              denominator is unreconciled. They are separate from the comparable
+              effective-electorate line. Rounded age-band rates do not establish
+              exact participating-voter counts.
             </p>
           )}
+        {qualifiedRows.some(
+          (record) =>
+            metricQualification(record, filters.metric) ===
+            "certified-roll-comparison",
+        ) && (
+          <p className="muted" style={{ fontSize: 12, color: "#F4B76A" }}>
+            Amber diamonds are qualified certified-roll comparisons. Their count
+            denominator is not a reconciled operational turnout electorate, so
+            they are not joined to the effective-electorate series. These counts
+            measure a participation gap and do not explain why people did not
+            vote. Source notes and comparison denominators accompany exports.
+          </p>
+        )}
+        {isVotingAgeMetric(filters.metric) && (
+          <div className="muted" style={{ fontSize: 12, lineHeight: 1.7 }}>
+            {populationNotes.length ? (
+              <p>{populationNotes.join(" ")}</p>
+            ) : (
+              <p>{emptyDescription}</p>
+            )}
+            <button
+              type="button"
+              className="button button-secondary"
+              onClick={() => {
+                setFilters({
+                  ...defaults,
+                  dataset: "elections",
+                  year: "2021",
+                  province: "all",
+                  municipality: "all",
+                  age: "all",
+                  search: "",
+                  type: "municipal",
+                  metric: "votingAgeParticipationGap",
+                  chart: "bar",
+                });
+                setFeedback("Showing the verified 2021 South Africa estimate.");
+              }}
+            >
+              View the verified 2021 South Africa adult-population gap ↗
+            </button>
+          </div>
+        )}
         {view === "chart" && (
           <ElectionChart
             option={option}

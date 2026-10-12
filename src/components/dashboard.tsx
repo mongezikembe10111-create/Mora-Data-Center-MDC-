@@ -27,7 +27,6 @@ import {
   sources,
   provinces,
   ageGroups,
-  referenceObservations,
   nextMunicipalElection,
   verificationStatus,
   currentRegistrationObservation,
@@ -39,6 +38,7 @@ import {
   ratioPercent,
   percentagePointChange,
   areTurnoutComparable,
+  participationBreakdown,
 } from "@/lib/analytics";
 import { effectiveElectorate } from "@/lib/explorer-metrics";
 import { formatNumber, formatPercent } from "@/lib/utils";
@@ -47,6 +47,7 @@ import AnalyticsChart from "./analytics-chart";
 import ScenarioLab from "./scenario-lab";
 import YouthLab from "./youth-lab";
 import ViewportContent from "./viewport-content";
+import ParticipationGap from "./participation-gap";
 const ElectoralMap = dynamic(() => import("./electoral-map"), {
   ssr: false,
   loading: () => (
@@ -69,10 +70,10 @@ const titles: Record<
   { eyebrow: string; title: string; description: string }
 > = {
   overview: {
-    eyebrow: "SOUTH AFRICAN ELECTORAL INTELLIGENCE",
+    eyebrow: "DEMOCRATIC INTELLIGENCE & CITIZEN ACTION",
     title: "South Africa’s democracy, measured.",
     description:
-      "Explore the people, participation and patterns shaping South African elections.",
+      "Understand elections, follow public decisions, and find practical ways to shape South Africa’s democracy.",
   },
   registration: {
     eyebrow: "VOTER REGISTRATION OBSERVATORY",
@@ -148,12 +149,18 @@ function SourceInfo({
     </details>
   );
 }
-export default function Dashboard({ view = "overview" }: { view?: View }) {
+export default function Dashboard({
+  view = "overview",
+  citizenActions,
+}: {
+  view?: View;
+  citizenActions?: React.ReactNode;
+}) {
   const [currentTime, setCurrentTime] = useState<number | null>(null);
   const [year, setYear] = useState(2021);
   const [province, setProvince] = useState("All provinces");
   const [denominator, setDenominator] = useState<
-    "absolute" | "eligible" | "registered"
+    "absolute" | "eligible" | "registered" | "voting-age"
   >("absolute");
   useEffect(() => {
     setCurrentTime(Date.now());
@@ -196,8 +203,15 @@ export default function Dashboard({ view = "overview" }: { view?: View }) {
         eligible: null,
         turnout: null,
         turnoutDenominator: null,
+        votingAgePopulation: null,
+        votingAgePopulationSourceId: undefined,
+        votingAgePopulationNote: undefined,
       });
   const metrics = electionMetrics(record);
+  const gap = participationBreakdown(
+    record,
+    record.votingAgePopulation ? "voting-age" : "electorate",
+  );
   const previous = elections.filter((e) => e.year < year).at(-1);
   const momentum =
     national && previous && areTurnoutComparable(record, previous)
@@ -242,29 +256,38 @@ export default function Dashboard({ view = "overview" }: { view?: View }) {
     : null;
   const stats = [
     {
-      label: "Eligible voting-age citizens",
-      value: formatNumber(record.eligible, true),
-      detail: "South African citizens aged 18+",
-      foot: `${year} · compatible denominator required`,
+      label: record.votingAgePopulation
+        ? "Voting-age residents · estimate"
+        : "Selected election’s voters’ roll",
+      value: formatNumber(
+        record.votingAgePopulation ?? record.registered,
+        true,
+      ),
+      detail: record.votingAgePopulation
+        ? "Adult population; includes non-citizen residents"
+        : "Certified registered people for this election",
+      foot: `${year} · ${record.votingAgePopulation ? "IEC-reported Stats SA estimate" : "IEC certified roll"}`,
       definition:
-        "Citizens aged at least 18 who meet legal voting eligibility. Adult residents are not an interchangeable denominator.",
+        record.votingAgePopulationNote ??
+        "Certified voters’ roll at the selected election. This is distinct from the current registration snapshot and the operational turnout electorate.",
+      sourceId: record.votingAgePopulationSourceId ?? record.sourceId,
     },
     {
-      label: "Registered voters",
+      label: "Current registered voters",
       value: formatNumber(liveRegistration, true),
-      detail: "Eligible-citizen registration rate unavailable",
+      detail: `Selected election’s certified roll: ${formatNumber(record.registered, true)}`,
       foot: "29 Sep 2026 · IEC registration snapshot",
       definition:
-        "Registered people in the IEC snapshot dated 29 September 2026. This current observation is distinct from the selected historical election; no contemporary eligible denominator is available.",
+        "Registered people in the IEC snapshot dated 29 September 2026. This observation is distinct from the selected historical election; no contemporary eligible denominator is available.",
       sourceId: currentRegistrationObservation.sourceId,
     },
     {
-      label: "Eligible youth · 18–35",
-      value: "—",
-      detail: "Registered youth: unavailable",
-      foot: "Comparable age-specific dataset required",
+      label: "Participating voters",
+      value: formatNumber(record.voters, true),
+      detail: "People participating in the selected election",
+      foot: `${year} · IEC recorded participation`,
       definition:
-        "Eligible South African citizens aged 18–35. Published broader age categories are not split to infer this population.",
+        "IEC participating-voter count for this election, distinct from multiple ballot papers. The 2021 appendix/narrative discrepancy is retained in the source note.",
     },
     {
       label:
@@ -283,15 +306,19 @@ export default function Dashboard({ view = "overview" }: { view?: View }) {
       featured: true,
     },
     {
-      label: "Electoral participation gap",
-      value: formatNumber(metrics.participationGap, true),
+      label: gap.estimated
+        ? "Adult-population participation gap"
+        : "Electorate participation gap",
+      value: formatNumber(gap.totalGap, true),
       detail:
-        metrics.participationGapRate == null
-          ? "Eligible minus participating citizens"
-          : `${formatPercent(metrics.participationGapRate)} of eligible citizens`,
-      foot: `${year} · eligible denominator required`,
-      definition:
-        "Eligible citizens minus participating voters, including unregistered citizens. Requires a compatible eligible population.",
+        gap.gapRate == null
+          ? "Compatible participating-person count required"
+          : `${formatPercent(gap.gapRate)} of ${gap.estimated ? "estimated adults" : "the documented electorate"}`,
+      foot: `${year} · ${gap.estimated ? "population estimate" : gap.qualified ? "qualified certified-roll comparison" : "effective electorate"}`,
+      definition: gap.estimated
+        ? "Estimated adult residents minus participating voters. Includes unregistered adults and non-citizen residents; it is not a legally eligible citizen count. See the gap decomposition and source note."
+        : "Documented election electorate minus participating voters. This shows nonparticipation within the recorded electorate, separately from people outside it. Historical qualifications remain explicit.",
+      sourceId: gap.sourceId,
     },
     {
       label: "Next municipal election",
@@ -392,17 +419,25 @@ export default function Dashboard({ view = "overview" }: { view?: View }) {
     [province],
   );
   const funnelStages = [
-    { label: "Eligible citizens", count: record.eligible, color: "#b9f56a" },
+    {
+      label: record.votingAgePopulation
+        ? "Adult residents · estimate"
+        : "Eligible citizens",
+      count: record.votingAgePopulation ?? record.eligible,
+      color: "#b9f56a",
+    },
     { label: "Registered electorate*", count: electorate, color: "#93bb6a" },
     { label: "Actual voters", count: record.voters, color: "#62a7f8" },
     { label: "Valid ballots", count: record.validBallots, color: "#437db8" },
   ];
   const basis =
-    denominator === "eligible"
-      ? record.eligible
-      : denominator === "registered"
-        ? electorate
-        : Math.max(...funnelStages.map((s) => s.count ?? 0));
+    denominator === "voting-age"
+      ? record.votingAgePopulation
+      : denominator === "eligible"
+        ? record.eligible
+        : denominator === "registered"
+          ? electorate
+          : Math.max(...funnelStages.map((s) => s.count ?? 0));
   const history = (
     <section className="section panel">
       <div className="panel-header">
@@ -471,7 +506,11 @@ export default function Dashboard({ view = "overview" }: { view?: View }) {
             ? "Comparable change unavailable"
             : `${momentum > 0 ? "+" : ""}${momentum.toFixed(2)} percentage points from ${previous?.year} to ${year}`}
         </span>
-        <Link prefetch={false} href="/explorer" className="text-link">
+        <Link
+          prefetch={false}
+          href={`/explorer?dataset=elections&year=${year}${national ? "" : `&province=${encodeURIComponent(province)}`}`}
+          className="text-link"
+        >
           View underlying data <ArrowUpRight size={11} />
         </Link>
       </div>
@@ -526,11 +565,20 @@ export default function Dashboard({ view = "overview" }: { view?: View }) {
           {[
             { key: "absolute", label: "Numbers" },
             { key: "eligible", label: "% eligible" },
+            ...(record.votingAgePopulation
+              ? [{ key: "voting-age", label: "% adults · est." }]
+              : []),
             { key: "registered", label: "% electorate" },
           ].map((d) => (
             <button
               key={d.key}
               aria-pressed={denominator === d.key}
+              disabled={d.key === "eligible" && record.eligible == null}
+              title={
+                d.key === "eligible" && record.eligible == null
+                  ? "An exact legally eligible-citizen denominator has not been verified for this election."
+                  : undefined
+              }
               onClick={() => setDenominator(d.key as typeof denominator)}
             >
               {d.label}
@@ -596,11 +644,13 @@ export default function Dashboard({ view = "overview" }: { view?: View }) {
           roll is a separate count. Municipal voters receive multiple ballots.
           The valid-ballot stage requires an identified ballot type; combined
           ballot totals are never treated as people.{" "}
-          {denominator === "eligible"
-            ? "All rates use eligible citizens as their denominator."
-            : denominator === "registered"
-              ? "All rates use the effective registered electorate as their denominator."
-              : "Counts are people, except explicitly identified ballot records."}
+          {denominator === "voting-age"
+            ? "All rates use the source’s estimated adult-resident population, including non-citizens. This is not a legally eligible citizen denominator."
+            : denominator === "eligible"
+              ? "All rates use eligible citizens as their denominator."
+              : denominator === "registered"
+                ? "All rates use the effective registered electorate as their denominator."
+                : "Counts are people, except explicitly identified ballot records."}
         </span>
       </div>
     </section>
@@ -610,8 +660,17 @@ export default function Dashboard({ view = "overview" }: { view?: View }) {
       <div className="panel-header">
         <div>
           <p className="eyebrow">THE REGISTRATION QUESTION</p>
-          <h2>A roll is not a rate</h2>
-          <p>{year} · compatible eligible citizens required</p>
+          <h2>
+            {record.votingAgePopulation
+              ? "Registration among adult residents"
+              : "A roll is not a rate"}
+          </h2>
+          <p>
+            {year} ·{" "}
+            {record.votingAgePopulation
+              ? "Source-reported voting-age population estimate"
+              : "Certified roll; eligible-citizen rate not established"}
+          </p>
         </div>
         <Users size={18} className="muted" />
       </div>
@@ -619,17 +678,25 @@ export default function Dashboard({ view = "overview" }: { view?: View }) {
         className="registration-ring"
         role="img"
         aria-label={
-          metrics.registrationRate == null
+          (metrics.registrationRate ?? metrics.votingAgeRegistrationCoverage) ==
+          null
             ? "Registration rate unavailable"
-            : `Registration rate ${formatPercent(metrics.registrationRate)}`
+            : `Registration coverage ${formatPercent(metrics.registrationRate ?? metrics.votingAgeRegistrationCoverage)}`
         }
       >
         <strong>
-          {metrics.registrationRate == null
-            ? "—"
-            : `${metrics.registrationRate.toFixed(1)}%`}
+          {(metrics.registrationRate ??
+            metrics.votingAgeRegistrationCoverage) == null
+            ? formatNumber(record.registered, true)
+            : `${(metrics.registrationRate ?? metrics.votingAgeRegistrationCoverage)!.toFixed(1)}%`}
         </strong>
-        <span>of eligible citizens</span>
+        <span>
+          {record.votingAgePopulation
+            ? "of estimated adult residents"
+            : metrics.registrationRate
+              ? "of eligible citizens"
+              : "registered people"}
+        </span>
       </div>
       <div className="breakdown-list">
         <div className="breakdown-row">
@@ -642,15 +709,28 @@ export default function Dashboard({ view = "overview" }: { view?: View }) {
         <div className="breakdown-row">
           <span>
             <i className="legend-dot" style={{ background: "#29374c" }} />
-            Eligible, not registered
+            {record.votingAgePopulation
+              ? "Estimated adult residents outside certified roll"
+              : "Eligible, not registered"}
           </span>
           <span className="mono">
-            {formatNumber(metrics.registrationGap, true)}
+            {formatNumber(
+              record.votingAgePopulation != null && record.registered != null
+                ? record.votingAgePopulation - record.registered
+                : metrics.registrationGap,
+              true,
+            )}
           </span>
         </div>
         <div className="breakdown-row">
-          <span>Eligible population</span>
-          <span className="mono">{formatNumber(record.eligible, true)}</span>
+          <span>
+            {record.votingAgePopulation
+              ? "Estimated adult residents"
+              : "Eligible population"}
+          </span>
+          <span className="mono">
+            {formatNumber(record.votingAgePopulation ?? record.eligible, true)}
+          </span>
         </div>
       </div>
       <div className="panel-footer">
@@ -716,13 +796,31 @@ export default function Dashboard({ view = "overview" }: { view?: View }) {
           </select>
           <Link
             prefetch={false}
-            href="/explorer"
+            href={`/explorer?dataset=elections&year=${year}${national ? "" : `&province=${encodeURIComponent(province)}`}`}
             className="button button-outline button-sm"
           >
             <Download size={13} /> Export data
           </Link>
         </div>
       </div>
+      {view === "overview" && citizenActions}
+      <nav className="electoral-section-links" aria-label="Electoral sections">
+        <Link prefetch={false} href="/registration">
+          Registration
+        </Link>
+        <Link prefetch={false} href="/youth">
+          Age profiles & participation
+        </Link>
+        <Link prefetch={false} href="/history">
+          Election history
+        </Link>
+        <Link prefetch={false} href="/map">
+          Electoral geography
+        </Link>
+        <Link prefetch={false} href="/comparison">
+          Compare elections & age bands
+        </Link>
+      </nav>
       <div className="filter-bar">
         <div className="filter-bar-left">
           <SlidersHorizontal size={13} className="muted" />
@@ -753,6 +851,24 @@ export default function Dashboard({ view = "overview" }: { view?: View }) {
           </button>
         </div>
       </div>
+      {!national &&
+        !provinceElections.some(
+          (row) => row.province === province && row.year === year,
+        ) && (
+          <div className="data-notice">
+            <span>
+              Verified provincial election counts for {province} are available
+              for 2016. The dated 2026 registration snapshot is shown
+              separately.
+            </span>
+            <button
+              className="button button-secondary button-sm"
+              onClick={() => selectYear(2016)}
+            >
+              Use verified 2016 province data
+            </button>
+          </div>
+        )}
       {(view === "overview" || view === "registration") && (
         <>
           <div className="overview-label">
@@ -806,6 +922,14 @@ export default function Dashboard({ view = "overview" }: { view?: View }) {
           {funnel}
           {registration}
         </div>
+      )}
+      {(view === "overview" ||
+        view === "registration" ||
+        view === "history") && (
+        <ParticipationGap
+          record={record}
+          geography={national ? "South Africa" : province}
+        />
       )}
       {(view === "overview" || view === "history") && history}
       {(view === "overview" || view === "map") && (
@@ -938,33 +1062,30 @@ export default function Dashboard({ view = "overview" }: { view?: View }) {
       )}
       {view === "registration" && <CompositionStudio />}
       {view === "registration" && (
-        <section className="section">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">REFERENCE OBSERVATIONS</p>
-              <h2>Dated leads, kept in context</h2>
-              <p>
-                User-provided starting references are not treated as verified
-                statistics or used in derived rates.
-              </p>
-            </div>
-          </div>
-          <div className="article-grid">
-            {referenceObservations
-              .filter((r) => !r.id.includes("2021"))
-              .map((r) => (
-                <article key={r.id} className="reference-item">
-                  <span className="badge badge-amber">
-                    UNVERIFIED REFERENCE · {r.observedAt}
-                  </span>
-                  <strong>
-                    {r.qualifier === "more-than" ? "> " : "≈ "}
-                    {formatNumber(r.value, true)}
-                  </strong>
-                  <h3 style={{ fontSize: 14 }}>{r.label}</h3>
-                  <p>{r.note}</p>
-                </article>
-              ))}
+        <section className="section panel">
+          <p className="eyebrow">
+            VERIFIED OBSERVATIONS, SHARED ACROSS THE APP
+          </p>
+          <h2>Follow the same dated evidence.</h2>
+          <p className="muted">
+            Explore original IEC age bands in the age laboratory, inspect age
+            and province compositions here, and compare dated records in the
+            explorer. Estimated adult-resident gaps are kept distinct from legal
+            eligibility.
+          </p>
+          <div className="electoral-section-links">
+            <Link href="/youth">
+              Age registration and historical participation
+            </Link>
+            <Link href="/explorer?dataset=registration">
+              Registration datasets and downloads
+            </Link>
+            <Link href="/comparison?mode=ages&metric=registered">
+              Compare published age bands
+            </Link>
+            <Link href="/methodology">
+              Methods, qualifications and source registry
+            </Link>
           </div>
         </section>
       )}

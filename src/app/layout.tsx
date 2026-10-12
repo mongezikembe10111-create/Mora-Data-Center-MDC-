@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     template: "%s | MORA Data Centre",
   },
   description:
-    "Independent South African electoral intelligence. Explore voter registration, participation, election history, and the evidence behind the numbers.",
+    "South African democratic intelligence and citizen action. Explore election participation, public bills and hearings, municipal consultation channels, and verified sources.",
 };
 export default function RootLayout({
   children,

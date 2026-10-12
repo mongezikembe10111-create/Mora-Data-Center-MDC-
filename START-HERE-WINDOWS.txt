@@ -1,0 +1,59 @@
+MORA DATA CENTRE - HOW TO OPEN THE UPDATED SOFTWARE ON WINDOWS
+
+You already installed Node.js for the earlier version. You do not need to
+install it again if that version ran successfully.
+
+1. Stop the old software.
+   In the Command Prompt window where it is running, press Ctrl + C.
+   If Windows asks "Terminate batch job?", type Y and press Enter.
+
+2. Download the updated ZIP from the link supplied with this update.
+   Right-click the ZIP and choose "Extract All", then "Extract".
+   Keep it in a new folder so you can still find your previous version.
+
+3. Open the extracted folder.
+   If it contains another folder, open that too. Find the folder containing
+   the file named "package.json". Windows may display this as "package".
+
+4. Open Command Prompt in that folder.
+   Click the address bar at the top of File Explorer.
+   Type cmd and press Enter. A black Command Prompt window opens.
+
+5. Install this version's packages.
+   Type the following command, then press Enter:
+
+   npm ci
+
+   Wait for it to finish. This can take a few minutes. Do not close the window.
+
+6. Start MORA.
+   Type the following command, then press Enter:
+
+   npm run dev
+
+   Wait until the window says "Ready". Keep this window open while using MORA.
+
+7. Open Microsoft Edge or Google Chrome.
+   Type this address in the browser's address bar, then press Enter:
+
+   http://localhost:3000
+
+8. Review the update.
+   - Overview: participation gaps, with sources and calculation downloads.
+   - Take part: comment windows, hearings, dates, venues and submission guides.
+   - Bills: proposed laws and draft local rules, with source documents.
+   - Municipalities: search all 257 councils and their published channels.
+   - Take part also links to free PMG alerts and the official IEC portal.
+
+   Civic notices were checked on 12 October 2026. Always check the linked
+   authority's current notice before submitting comments or travelling.
+
+NEXT TIME
+Open Command Prompt in this same folder and run npm run dev again, then open
+the browser address above. You only need npm ci after installing a new version
+or if its package files are missing.
+
+IF IT DOES NOT START
+If the message says port 3000 is in use, close the old MORA server window first.
+If you see another error, copy the complete error text, including the command
+above it. Share that text when asking for help.

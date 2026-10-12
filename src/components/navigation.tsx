@@ -7,16 +7,35 @@ import { ArrowUpRight, Command, Database, Menu, Search, X } from "lucide-react";
 import { articles } from "@/lib/articles";
 const links = [
   { label: "Overview", href: "/" },
-  { label: "Registration", href: "/registration" },
-  { label: "Youth", href: "/youth" },
+  { label: "Take part", href: "/participation" },
+  { label: "Bills", href: "/bills" },
+  { label: "Municipalities", href: "/municipalities" },
   { label: "Election history", href: "/history" },
-  { label: "Geography", href: "/map" },
   { label: "Data explorer", href: "/explorer" },
   { label: "Research", href: "/research" },
   { label: "Methodology", href: "/methodology" },
 ];
 const searchItems = [
   ...links,
+  { label: "Voter registration and age composition", href: "/registration" },
+  { label: "Youth age profiles and participation", href: "/youth" },
+  { label: "Electoral geography and provincial map", href: "/map" },
+  {
+    label: "Register to vote: official IEC portal",
+    href: "https://registertovote.elections.org.za/",
+  },
+  {
+    label: "Bills, hearings, public comments and submissions",
+    href: "/participation",
+  },
+  {
+    label: "Free PMG subscription and parliamentary reports",
+    href: "/participation#pmg-resources",
+  },
+  {
+    label: "Municipal public participation, IDP and budgets",
+    href: "/municipalities",
+  },
   { label: "Compare municipal election years", href: "/comparison" },
   ...articles.map((article) => ({
     label: article.title,

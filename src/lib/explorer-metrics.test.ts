@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import type { ElectionRecord } from "./data";
+import { getElection } from "./data";
 import { csvCell, metricValue } from "./explorer-metrics";
 
 const fixture: ElectionRecord & { turnoutDenominator: number | null } = {
@@ -56,4 +57,23 @@ test("exported CSV identifies missing observations and neutralises source-text s
   );
   assert.equal(csvCell(-12), '"-12"');
   assert.equal(csvCell('IEC, "report"'), '"IEC, ""report"""');
+});
+
+test("explorer exposes distinct electorate and estimated adult-population participation gaps", () => {
+  const record = getElection(2021)!;
+  assert.equal(metricValue(record, "electorateParticipationGap"), 14_239_459);
+  assert.equal(metricValue(record, "votingAgePopulation"), 38_573_897);
+  assert.equal(metricValue(record, "votingAgeParticipationGap"), 26_510_188);
+  assert.equal(metricValue(record, "votingAgeOutsideElectorate"), 12_270_729);
+  assert.equal(metricValue(record, "participationGap"), null);
+  assert.equal(metricValue(record, "registrationGap"), null);
+  assert.equal(
+    metricValue(getElection(2000)!, "electorateParticipationGap"),
+    9_593_782,
+  );
+  assert.equal(metricValue(getElection(2000)!, "nonVoters"), null);
+  assert.equal(
+    metricValue(getElection(2016)!, "votingAgeParticipationGap"),
+    null,
+  );
 });
