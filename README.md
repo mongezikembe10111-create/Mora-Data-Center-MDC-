@@ -1,6 +1,6 @@
-# MORA Data Centre
+# The Public Square
 
-**Democracy, By the Numbers.** A South African democratic intelligence and citizen participation application built with Next.js App Router, React, TypeScript, Tailwind, Radix/shadcn primitives, Motion, ECharts, D3, MapLibre, Turf, TanStack Table and Zod.
+**A space to question power.** A South African public-interest website with democratic intelligence and citizen participation tools built with Next.js App Router, React, TypeScript, Tailwind, Radix/shadcn primitives, Motion, ECharts, D3, MapLibre, Turf, TanStack Table and Zod.
 
 ## Run locally
 
@@ -22,6 +22,8 @@ npm run start
 The build validates the curated datasets before compiling. In a cloud sandbox with a read-only home directory, use `npm ci --cache /workspace/.npm-cache --no-audit --no-fund`.
 
 ## What works
+
+- A premium Public Square homepage using the supplied navy, civic blue and signal lime identity, a faceted Africa/speech mark, editorial typography, and responsive layouts. Three interactive data previews connect to the complete analytics at `/overview`; government-sphere notice filters and municipality search connect directly to the existing civic tools. Subtle scroll reveals, pointer movement and hover feedback respect reduced-motion preferences.
 
 - Executive overview, dated source KPIs, linked election/province filters, participation funnel and registration definitions. The participation-gap calculator separates the observed electorate gap from a source-based adult-population estimate and the unverified eligible-citizen denominator.
 - Municipal history (2000, 2006, 2011, 2016, 2021), accessible chart tables and mathematically consistent comparisons.
@@ -109,10 +111,22 @@ Playwright uses `/usr/bin/chromium` when available. Otherwise run `npx playwrigh
 
 GitHub Actions runs installation, TypeScript, tests, dataset validation and the production build. Browser accessibility audits are useful evidence but do not constitute a complete WCAG conformance certification.
 
-The [verification record](docs/verification.md) documents the executed checks and mobile homepage Lighthouse audit: performance 91, accessibility 100, best practices 100 and SEO 100.
+The [verification record](docs/verification.md) documents 65 passing unit tests, 30 passing browser tests, production/static-export checks and a mobile homepage audit scoring 93 for performance and 100 for accessibility, best practices and SEO. See the [desktop and phone previews](docs/website-preview.md) and [publishing guide](docs/publish-website.md).
 
 ## Deployment
 
-Deploy to any supported Next.js Node host using the lockfile, `npm ci`, `npm run build`, and `npm run start`. Supply the host's `PORT` if necessary. No deployment has been published automatically. Configure an operator contact and review the policy copy before public launch. Do not run `next dev` and a production build against the same output directory simultaneously.
+Deploy to any supported Next.js Node host using the lockfile, `npm ci`, `npm run build`, and `npm run start`. Supply the host's `PORT` if necessary. The repository includes a GitHub Pages workflow. Public hosting requires GitHub Pages to be enabled for the repository; source publication alone does not establish a live site. Configure an operator contact and review the policy copy before public launch. Do not run `next dev` and a production build against the same output directory simultaneously.
 
 For Codex cloud tasks, use the existing isolated checkout under `/workspace/Mora-Data-Center-MDC-`; do not create a worktree unless explicitly requested. Dependency files persist in an environment snapshot; running server processes do not. Restart the server and make a functional local request in each new task.
+
+## Static website publishing
+
+The site also supports a complete static export for GitHub Pages. The normal Node.js development and production commands above remain available.
+
+```sh
+PUBLIC_SQUARE_STATIC_EXPORT=1 NEXT_PUBLIC_BASE_PATH=/Mora-Data-Center-MDC- npm run build
+```
+
+The default static destination is `out/`. Next.js 16 uses a custom `distDir` as the export destination in this mode, so leave `MORA_BUILD_DIR` unset when expecting `out/`. The Pages workflow builds, tests and publishes that directory on pushes to `main` after the repository’s Pages source is set to **GitHub Actions**. An optional custom domain can be configured by its owner through GitHub Pages.
+
+All charts, maps, filters, local downloads and civic date calculations work in the browser. Updating the curated source snapshot requires rebuilding and republishing. Source outages and coverage limits remain visible.

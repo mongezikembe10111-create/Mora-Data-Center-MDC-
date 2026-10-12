@@ -26,7 +26,7 @@ export default function ContactPage() {
   }
 
   function draft() {
-    return `MORA Data Centre enquiry\n\nName: ${form.name || "Not provided"}\nReply email: ${form.email || "Not provided"}\nSubject: ${form.subject}\n\n${form.message.trim()}\n\nPrepared locally. This draft has not been sent.\n`;
+    return `The Public Square enquiry\n\nName: ${form.name || "Not provided"}\nReply email: ${form.email || "Not provided"}\nSubject: ${form.subject}\n\n${form.message.trim()}\n\nPrepared locally. This draft has not been sent.\n`;
   }
 
   function download(event: React.FormEvent<HTMLFormElement>) {
@@ -39,11 +39,11 @@ export default function ContactPage() {
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     setStatus(
-      "Your enquiry draft has been downloaded. It has not been sent to MORA.",
+      "Your enquiry draft has been downloaded. It has not been sent to The Public Square.",
     );
   }
 
-  const issueUrl = `https://github.com/mongezikembe10111-create/Mora-Data-Center-MDC-/issues/new?title=${encodeURIComponent(`MORA: ${form.subject}`)}&body=${encodeURIComponent(`## Enquiry\n${form.message || "Please describe your question or reproducible issue."}\n\n## Page / dataset\nPlease include the relevant page URL or dataset reference.\n\nPlease do not include personal or sensitive information in this public issue.`)}`;
+  const issueUrl = `https://github.com/mongezikembe10111-create/Mora-Data-Center-MDC-/issues/new?title=${encodeURIComponent(`The Public Square: ${form.subject}`)}&body=${encodeURIComponent(`## Enquiry\n${form.message || "Please describe your question or reproducible issue."}\n\n## Page / dataset\nPlease include the relevant page URL or dataset reference.\n\nPlease do not include personal or sensitive information in this public issue.`)}`;
 
   return (
     <div className="page-shell">
@@ -55,7 +55,8 @@ export default function ContactPage() {
           better questions.
         </h1>
         <p className="muted">
-          Ask about the data, flag a source issue or prepare a research enquiry.
+          Ask about the data, flag a source issue or prepare an enquiry for The
+          Public Square.
         </p>
       </header>
       <div
@@ -75,9 +76,9 @@ export default function ContactPage() {
             Write it here. Keep a copy.
           </h2>
           <p className="muted">
-            An operator email or submission endpoint has not been supplied for
-            this build. This form creates a local text draft; it does not send
-            your details.
+            Save a copy of your question or correction to your device. This form
+            does not send messages. You can report a source correction using the
+            project’s GitHub issue link.
           </p>
           <form
             onSubmit={download}
@@ -117,6 +118,7 @@ export default function ContactPage() {
               >
                 <option>Data or methodology</option>
                 <option>Data correction</option>
+                <option>Public participation notice</option>
                 <option>Research enquiry</option>
                 <option>Accessibility issue</option>
                 <option>Technical issue</option>

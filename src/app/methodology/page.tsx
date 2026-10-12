@@ -8,11 +8,17 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { sources, verificationStatus } from "@/lib/data";
+import { civicCoverage, civicNotices, civicSources } from "@/lib/civic-data";
+import {
+  municipalities,
+  municipalitySources,
+  municipalDirectoryCheckedAt,
+} from "@/lib/municipalities";
 
 export const metadata = {
-  title: "Methodology & Sources | MORA",
+  title: "Methodology & Sources | The Public Square",
   description:
-    "Source provenance, electoral definitions, calculation rules and data limitations for reproducible MORA analysis.",
+    "Source provenance, electoral definitions, civic notice checks and calculation rules for reproducible Public Square analysis.",
 };
 
 const definitions = [
@@ -108,13 +114,14 @@ export default function MethodologyPage() {
       <header className="page-intro">
         <p className="eyebrow">Methodology & source register</p>
         <h1>
-          Trust is a method.
+          Follow the evidence.
           <br />
-          Not an aesthetic.
+          Question the method.
         </h1>
         <p className="muted">
           Definitions, provenance and reproducible calculations. The rules that
-          turn election information into responsible analysis.
+          turn election information into responsible analysis and source-linked
+          citizen action.
         </p>
       </header>
       <section
@@ -127,7 +134,7 @@ export default function MethodologyPage() {
           <ShieldCheck size={20} aria-hidden="true" />
         </div>
         <h2 id="verification-heading" className="section-title">
-          {verified} of {sources.length} source records verified
+          {verified} of {sources.length} electoral source records verified
         </h2>
         <p className="muted">
           Verified records preserve the original official publication, its
@@ -170,7 +177,7 @@ export default function MethodologyPage() {
             <Icon
               size={22}
               aria-hidden="true"
-              style={{ color: "#B9F56A", marginBottom: 15 }}
+              style={{ color: "var(--lime)", marginBottom: 15 }}
             />
             <h2 style={{ fontSize: 18 }}>{title}</h2>
             <p className="muted">{description}</p>
@@ -186,7 +193,10 @@ export default function MethodologyPage() {
           {definitions.map(([title, description]) => (
             <details
               key={title}
-              style={{ borderBottom: "1px solid #29374C", padding: "19px 0" }}
+              style={{
+                borderBottom: "1px solid var(--border)",
+                padding: "19px 0",
+              }}
             >
               <summary style={{ cursor: "pointer", fontWeight: 600 }}>
                 {title}
@@ -210,7 +220,10 @@ export default function MethodologyPage() {
           {calculations.map(({ title, formula, note }) => (
             <details
               key={title}
-              style={{ borderBottom: "1px solid #29374C", padding: "18px 0" }}
+              style={{
+                borderBottom: "1px solid var(--border)",
+                padding: "18px 0",
+              }}
             >
               <summary style={{ cursor: "pointer", fontWeight: 600 }}>
                 {title}
@@ -218,7 +231,7 @@ export default function MethodologyPage() {
               <p
                 style={{
                   fontFamily: "var(--font-mono, monospace)",
-                  color: "#B9F56A",
+                  color: "var(--lime)",
                   fontSize: 14,
                   margin: "16px 0 10px",
                   overflowWrap: "anywhere",
@@ -350,6 +363,95 @@ export default function MethodologyPage() {
           ))}
         </div>
       </section>
+      <section
+        className="panel prose"
+        style={{ marginTop: 38 }}
+        aria-labelledby="civic-method-heading"
+      >
+        <p className="eyebrow">Public participation & accountability</p>
+        <h2 id="civic-method-heading">An opportunity needs a source.</h2>
+        <p>
+          The participation collection contains {civicNotices.length} notices,
+          bills, consultations, scheduled hearings and reports, supported by{" "}
+          {civicSources.length} recorded source captures. It was checked on{" "}
+          <time dateTime={civicCoverage.checkedAt}>12 October 2026</time> in
+          South African time. Each notice retains its source, retrieval date and
+          published arrangements. This is a curated snapshot; it does not
+          automatically capture every government update.
+        </p>
+        <h3>Dates, deadlines and places</h3>
+        <p>
+          A submission deadline and a hearing date are separate fields. A closed
+          comment window can still have a future hearing. Exact times use South
+          African Standard Time (UTC+2); date-only notices do not receive an
+          invented cutoff time. Calendar downloads use the published instant
+          where available, or a labelled all-day reminder when only a date is
+          given. Confirm joining links and travel arrangements with the issuer.
+        </p>
+        <p>
+          A published bill is not automatically an open consultation. Municipal
+          draft rules, plans and by-laws retain their own proposal types. Where
+          sources conflict, the record explains the conflict: the Second Special
+          Appropriation call follows its detailed notice’s 6 October deadline,
+          rather than inferring an extension from the calls index.
+        </p>
+        <h3>Municipal coverage</h3>
+        <p>
+          The directory lists {municipalities.length} municipalities, checked on{" "}
+          <time dateTime={municipalDirectoryCheckedAt}>12 October 2026</time>.
+          Municipal codes and published websites were checked against the
+          Treasury register and Local Government Handbook. Topic links were
+          discovered on the published municipal websites and checked directly.
+          Website-only fallbacks and unsuccessful checks remain labelled. A
+          reachable page does not establish that a current comment window is
+          open; some published documents describe earlier periods.
+        </p>
+        <div style={{ display: "grid", gap: 10, marginBottom: 24 }}>
+          {municipalitySources.map((source) => (
+            <a
+              key={source.id}
+              href={source.url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {source.label}{" "}
+              <ArrowUpRight
+                size={13}
+                aria-hidden="true"
+                style={{ display: "inline" }}
+              />
+            </a>
+          ))}
+        </div>
+        <h3>Registration and independent monitoring</h3>
+        <p>
+          The IEC registration portal was identified through the IEC’s official
+          registration guide. The 2026 municipal election timetable records
+          proclamation on 7 August 2026, when registration for that election
+          closed. A registration link does not promise entry to that election’s
+          certified roll after the cutoff. PMG’s own alert instructions describe
+          free email alerts with a PMG account; you choose your settings on PMG.
+          The Public Square does not create an account or subscribe you.
+        </p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+          <Link prefetch={false} href="/participation" className="button">
+            Examine participation records{" "}
+            <ArrowUpRight size={15} aria-hidden="true" />
+          </Link>
+          <Link prefetch={false} href="/municipalities" className="button">
+            Explore the municipal directory{" "}
+            <ArrowUpRight size={15} aria-hidden="true" />
+          </Link>
+          <a
+            href="https://pmg.org.za/email-alerts/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="button"
+          >
+            Free PMG alerts <ArrowUpRight size={15} aria-hidden="true" />
+          </a>
+        </div>
+      </section>
       <section className="panel prose" style={{ marginTop: 38 }}>
         <h2>Historical turnout and reconciliation</h2>
         <p>
@@ -368,9 +470,9 @@ export default function MethodologyPage() {
           an electorate. Its 48.40% is preserved with a ballot-pool label; a
           person-level turnout denominator, abstention rate, and changes against
           person-based turnout are unavailable. The 2021 report’s narrative and
-          appendix give different participating-voter totals; MORA retains the
-          results-appendix figure and flags the discrepancy in the source
-          record.
+          appendix give different participating-voter totals; The Public Square
+          retains the results-appendix figure and flags the discrepancy in the
+          source record.
         </p>
         <h2>Geography and time</h2>
         <p>

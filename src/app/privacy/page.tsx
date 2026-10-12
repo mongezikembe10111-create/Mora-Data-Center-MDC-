@@ -1,16 +1,16 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Privacy Policy | MORA",
+  title: "Privacy Policy | The Public Square",
   description:
-    "How this MORA application handles information, local enquiries and external links.",
+    "How The Public Square handles information, local drafts and external civic resources.",
 };
 
 export default function PrivacyPage() {
   return (
     <div className="page-shell">
       <header className="page-intro">
-        <p className="eyebrow">Privacy policy · 11 October 2026</p>
+        <p className="eyebrow">Privacy policy · 12 October 2026</p>
         <h1>
           Your questions.
           <br />
@@ -25,7 +25,7 @@ export default function PrivacyPage() {
       <article className="prose panel" style={{ maxWidth: 900 }}>
         <h2 id="collection">Information in this application</h2>
         <p>
-          The application has no account registration, advertising tracker or
+          The Public Square has no account registration, advertising tracker or
           application analytics service. Electoral datasets displayed here are
           aggregate public research information. A search or filter selection is
           processed by the interface; shareable links can include the selected
@@ -34,10 +34,10 @@ export default function PrivacyPage() {
         <h2 id="enquiries">Enquiry drafts</h2>
         <p>
           The contact form keeps your entries in the active browser page and
-          produces a text file when you choose to download it. There is no MORA
+          produces a text file when you choose to download it. There is no
           form-submission endpoint in this build, and downloading the draft does
-          not send it to MORA. Closing or reloading the page clears the form’s
-          in-memory entries.
+          not send it to The Public Square. Closing or reloading the page clears
+          the form’s in-memory entries.
         </p>
         <p>
           If you choose the GitHub issue link, the enquiry message is included
@@ -56,6 +56,13 @@ export default function PrivacyPage() {
           a public production launch.
         </p>
         <h2 id="external-services">External resources</h2>
+        <p>
+          Registering to vote, subscribing to PMG alerts and submitting comments
+          happen on the relevant external service. The Public Square does not
+          create those accounts, subscribe you, or send a public participation
+          submission. A locally prepared submission draft remains on your device
+          until you choose how to share it.
+        </p>
         <p>
           Official source links open external sites with their own policies. Map
           assets, where enabled, may be requested from the providers identified

@@ -292,7 +292,7 @@ export default function ParticipationDetail({
             )}
             <p className="muted" style={{ marginTop: 20, marginBottom: 0 }}>
               Confirm the current deadline, required documents and whether oral
-              participation needs a separate request. MORA does not send
+              participation needs a separate request. The Public Square does not send
               submissions or register you for a hearing.
             </p>
           </section>
@@ -302,7 +302,7 @@ export default function ParticipationDetail({
             <p className="muted">
               Write a reasoned response and download a text copy. Your writing
               stays in this page’s memory until you leave; it is not sent to
-              MORA or the issuing authority. Check whether submissions will
+              The Public Square or the issuing authority. Check whether submissions will
               become public before including personal information.
             </p>
             {isClosed && (

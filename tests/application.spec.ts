@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 test("page navigation, search, and main landmark work with a keyboard", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/overview");
   await page.locator(".chart-space").first().scrollIntoViewIfNeeded();
   await expect(page.locator(".chart-space svg").first()).toBeVisible();
   await page.getByRole("button", { name: "Search pages and datasets" }).click();

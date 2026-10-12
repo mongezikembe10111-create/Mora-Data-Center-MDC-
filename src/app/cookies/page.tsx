@@ -1,18 +1,18 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Cookie Policy | MORA",
-  description: "Cookie and browser-storage practices for the MORA application.",
+  title: "Cookie Policy | The Public Square",
+  description: "Cookie and browser-storage practices for The Public Square.",
 };
 
 export default function CookiesPage() {
   return (
     <div className="page-shell">
       <header className="page-intro">
-        <p className="eyebrow">Cookie policy · 11 October 2026</p>
+        <p className="eyebrow">Cookie policy · 12 October 2026</p>
         <h1>
           No marketing trackers.
-          <br />A focused research experience.
+          <br />A focused public square.
         </h1>
         <p className="muted">
           A consent prompt is appropriate when optional tracking exists. The
@@ -23,10 +23,10 @@ export default function CookiesPage() {
       <article className="prose panel" style={{ maxWidth: 900 }}>
         <h2>What the application uses</h2>
         <p>
-          Filters, research examples and contact drafts operate in browser
-          memory. Shareable filter selections can be stored in the page URL.
-          Downloaded CSV files and enquiry drafts are saved only when you choose
-          a download action.
+          Filters, research examples, participation drafts and contact drafts
+          operate in browser memory. Shareable filter selections can be stored
+          in the page URL. Downloaded CSV files, calendar reminders and drafts
+          are saved only when you choose a download action.
         </p>
         <p>
           The application itself does not set optional marketing or analytics
@@ -36,11 +36,11 @@ export default function CookiesPage() {
         <h2>Services outside this application</h2>
         <p>
           The production host may use infrastructure cookies for security or
-          routing. External source sites and GitHub have their own cookie
-          practices when you open them. Map resource providers can receive
-          technical requests when their resources load. Deployment operators
-          should document any hosting cookies and provider requirements that
-          apply to their installation.
+          routing. External source sites, PMG, the IEC and GitHub have their own
+          cookie practices when you open them. Map resource providers can
+          receive technical requests when their resources load. Deployment
+          operators should document any hosting cookies and provider
+          requirements that apply to their installation.
         </p>
         <h2>If optional tracking is introduced</h2>
         <p>

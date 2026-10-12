@@ -71,7 +71,7 @@ export function civicCalendar(
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//MORA Data Centre//Public participation reminders//EN",
+    "PRODID:-//The Public Square Data Centre//Public participation reminders//EN",
     "CALSCALE:GREGORIAN",
     "BEGIN:VEVENT",
     `UID:${notice.id}-${kind}@mora-data-centre.local`,

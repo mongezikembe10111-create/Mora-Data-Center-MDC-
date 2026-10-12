@@ -27,8 +27,8 @@ export async function generateMetadata({
   const article = getArticle(slug);
   return {
     title: article
-      ? `${article.title} | MORA Research`
-      : "Article unavailable | MORA",
+      ? `${article.title} | The Public Square Research`
+      : "Article unavailable | The Public Square",
     description: article?.summary,
   };
 }
@@ -74,7 +74,7 @@ export default async function ResearchArticlePage({
           }}
         >
           <span>
-            By <strong style={{ color: "#F5F7FB" }}>MORA</strong>
+            By <strong style={{ color: "#F5F7FB" }}>The Public Square</strong>
           </span>
           <time dateTime={article.publishedAt}>11 October 2026</time>
           <span

@@ -24,11 +24,26 @@ const mono = localFont({
 });
 export const metadata: Metadata = {
   title: {
-    default: "MORA Data Centre — Democracy, By the Numbers.",
-    template: "%s | MORA Data Centre",
+    default: "The Public Square — A space to question power.",
+    template: "%s | The Public Square",
   },
+  applicationName: "The Public Square",
   description:
-    "South African democratic intelligence and citizen action. Explore election participation, public bills and hearings, municipal consultation channels, and verified sources.",
+    "A more informed public square. Explore South African election data, public bills and hearings, municipal participation, research and verified sources. Understand democracy. Take part in it.",
+  openGraph: {
+    title: "The Public Square — A space to question power.",
+    description:
+      "People, data, ideas and accountability. South African democratic intelligence and citizen action, grounded in verifiable evidence.",
+    siteName: "The Public Square",
+    locale: "en_ZA",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "The Public Square",
+    description:
+      "A space to question power. Politics, law, society, accountability.",
+  },
 };
 export default function RootLayout({
   children,

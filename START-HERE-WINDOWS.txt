@@ -1,4 +1,4 @@
-MORA DATA CENTRE - HOW TO OPEN THE UPDATED SOFTWARE ON WINDOWS
+THE PUBLIC SQUARE - HOW TO OPEN THE UPDATED SOFTWARE ON WINDOWS
 
 You already installed Node.js for the earlier version. You do not need to
 install it again if that version ran successfully.
@@ -26,12 +26,12 @@ install it again if that version ran successfully.
 
    Wait for it to finish. This can take a few minutes. Do not close the window.
 
-6. Start MORA.
+6. Start The Public Square.
    Type the following command, then press Enter:
 
    npm run dev
 
-   Wait until the window says "Ready". Keep this window open while using MORA.
+   Wait until the window says "Ready". Keep this window open while using The Public Square.
 
 7. Open Microsoft Edge or Google Chrome.
    Type this address in the browser's address bar, then press Enter:
@@ -39,6 +39,7 @@ install it again if that version ran successfully.
    http://localhost:3000
 
 8. Review the update.
+   - Home: the new Public Square website, with interactive previews and search.
    - Overview: participation gaps, with sources and calculation downloads.
    - Take part: comment windows, hearings, dates, venues and submission guides.
    - Bills: proposed laws and draft local rules, with source documents.
@@ -54,6 +55,6 @@ the browser address above. You only need npm ci after installing a new version
 or if its package files are missing.
 
 IF IT DOES NOT START
-If the message says port 3000 is in use, close the old MORA server window first.
+If the message says port 3000 is in use, close the old Public Square server window first.
 If you see another error, copy the complete error text, including the command
 above it. Share that text when asking for help.

@@ -5,7 +5,7 @@ export default function Page() {
   return (
     <div className="page-shell">
       <section className="page-intro">
-        <p className="eyebrow">MORA RESEARCH TOOLS</p>
+        <p className="eyebrow">The Public Square RESEARCH TOOLS</p>
         <h1>Data explorer</h1>
         <p className="muted">
           Interrogate the source data. Filter, chart, sort and download the

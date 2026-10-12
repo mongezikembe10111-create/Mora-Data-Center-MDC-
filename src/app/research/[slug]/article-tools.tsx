@@ -58,7 +58,7 @@ export default function ArticleTools({
           className="button"
           type="button"
           onClick={() =>
-            copy(`${highlight}\n— MORA, ${title}\n${window.location.href}`)
+            copy(`${highlight}\n— The Public Square, ${title}\n${window.location.href}`)
           }
         >
           <Copy size={15} aria-hidden="true" />

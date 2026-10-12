@@ -70,10 +70,10 @@ const titles: Record<
   { eyebrow: string; title: string; description: string }
 > = {
   overview: {
-    eyebrow: "DEMOCRATIC INTELLIGENCE & CITIZEN ACTION",
+    eyebrow: "THE PUBLIC SQUARE DATA CENTRE",
     title: "South Africa’s democracy, measured.",
     description:
-      "Understand elections, follow public decisions, and find practical ways to shape South Africa’s democracy.",
+      "Explore the people, participation and patterns behind South African elections. Evidence to inform your next question.",
   },
   registration: {
     eyebrow: "VOTER REGISTRATION OBSERVATORY",
@@ -349,15 +349,15 @@ export default function Dashboard({
       grid: { left: 46, right: 22, top: 25, bottom: 35 },
       tooltip: {
         trigger: "axis" as const,
-        backgroundColor: "#172235",
-        borderColor: "#29374c",
+        backgroundColor: "#0f1b2d",
+        borderColor: "#25364e",
         textStyle: { color: "#f5f7fb" },
         valueFormatter: (v: unknown) => `${v}%`,
       },
       xAxis: {
         type: "category" as const,
         data: historyRows.map((e) => String(e.year)),
-        axisLine: { lineStyle: { color: "#29374c" } },
+        axisLine: { lineStyle: { color: "#25364e" } },
         axisTick: { show: false },
         axisLabel: { color: "#94a3b8", fontFamily: "Geist Mono", fontSize: 11 },
       },
@@ -367,7 +367,7 @@ export default function Dashboard({
         max: 100,
         axisLabel: { formatter: "{value}%", color: "#94a3b8", fontSize: 10 },
         splitLine: {
-          lineStyle: { color: "#29374c88", type: "dashed" as const },
+          lineStyle: { color: "#25364e88", type: "dashed" as const },
         },
       },
       series: [
@@ -381,10 +381,10 @@ export default function Dashboard({
           smooth: 0.2,
           symbol: "circle",
           symbolSize: 8,
-          lineStyle: { color: "#b9f56a", width: 3 },
+          lineStyle: { color: "#a3ff3d", width: 3 },
           itemStyle: {
-            color: "#b9f56a",
-            borderColor: "#101827",
+            color: "#a3ff3d",
+            borderColor: "#030b14",
             borderWidth: 3,
           },
           areaStyle: {
@@ -395,8 +395,8 @@ export default function Dashboard({
               x2: 0,
               y2: 1,
               colorStops: [
-                { offset: 0, color: "#b9f56a25" },
-                { offset: 1, color: "#b9f56a00" },
+                { offset: 0, color: "#a3ff3d25" },
+                { offset: 1, color: "#a3ff3d00" },
               ],
             },
           },
@@ -424,11 +424,11 @@ export default function Dashboard({
         ? "Adult residents · estimate"
         : "Eligible citizens",
       count: record.votingAgePopulation ?? record.eligible,
-      color: "#b9f56a",
+      color: "#a3ff3d",
     },
-    { label: "Registered electorate*", count: electorate, color: "#93bb6a" },
-    { label: "Actual voters", count: record.voters, color: "#62a7f8" },
-    { label: "Valid ballots", count: record.validBallots, color: "#437db8" },
+    { label: "Registered electorate*", count: electorate, color: "#73b12a" },
+    { label: "Actual voters", count: record.voters, color: "#3b82f6" },
+    { label: "Valid ballots", count: record.validBallots, color: "#2563eb" },
   ];
   const basis =
     denominator === "voting-age"
@@ -451,7 +451,7 @@ export default function Dashboard({
         </div>
         <div className="badge">
           2000 — 2021{" "}
-          <span className="legend-dot" style={{ background: "#b9f56a" }} />
+          <span className="legend-dot" style={{ background: "#a3ff3d" }} />
         </div>
       </div>
       {historyRows.some((e) => e.turnout != null) ? (
@@ -470,7 +470,7 @@ export default function Dashboard({
       )}
       {national && (
         <p className="chart-caption">
-          <span className="legend-dot" style={{ background: "#b9f56a" }} />{" "}
+          <span className="legend-dot" style={{ background: "#a3ff3d" }} />{" "}
           Comparable person-based turnout ·{" "}
           <span className="legend-dot" style={{ background: "#f4b76a" }} />{" "}
           2000: unreconciled denominator; 2006: ballot-pool basis. These
@@ -701,14 +701,14 @@ export default function Dashboard({
       <div className="breakdown-list">
         <div className="breakdown-row">
           <span>
-            <i className="legend-dot" style={{ background: "#b9f56a" }} />
+            <i className="legend-dot" style={{ background: "#a3ff3d" }} />
             Registered voters
           </span>
           <span className="mono">{formatNumber(record.registered, true)}</span>
         </div>
         <div className="breakdown-row">
           <span>
-            <i className="legend-dot" style={{ background: "#29374c" }} />
+            <i className="legend-dot" style={{ background: "#25364e" }} />
             {record.votingAgePopulation
               ? "Estimated adult residents outside certified roll"
               : "Eligible, not registered"}
@@ -987,7 +987,7 @@ export default function Dashboard({
                         color: "#94a3b8",
                         formatter: (v: number) => formatNumber(v, true),
                       },
-                      splitLine: { lineStyle: { color: "#29374c" } },
+                      splitLine: { lineStyle: { color: "#25364e" } },
                     },
                     series: [
                       {
@@ -995,7 +995,7 @@ export default function Dashboard({
                         type: "bar",
                         data: historyRows.map((e) => e.registered),
                         itemStyle: {
-                          color: "#62a7f8",
+                          color: "#3b82f6",
                           borderRadius: [3, 3, 0, 0],
                         },
                       },
@@ -1004,7 +1004,7 @@ export default function Dashboard({
                         type: "bar",
                         data: historyRows.map((e) => e.voters),
                         itemStyle: {
-                          color: "#b9f56a",
+                          color: "#a3ff3d",
                           borderRadius: [3, 3, 0, 0],
                         },
                       },
@@ -1160,7 +1160,9 @@ export default function Dashboard({
                   <h3>{article.title}</h3>
                   <p>{article.summary}</p>
                   <div className="article-card-meta">
-                    <span>MORA · {article.readingMinutes} MIN READ</span>
+                    <span>
+                      THE PUBLIC SQUARE · {article.readingMinutes} MIN READ
+                    </span>
                     <ArrowUpRight size={13} />
                   </div>
                 </Link>

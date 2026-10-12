@@ -1,5 +1,4 @@
-import Dashboard from "@/components/dashboard";
-import CitizenActions from "@/components/citizen-actions";
+import PublicSquareHome from "@/components/public-square-home";
 export default function Home() {
-  return <Dashboard citizenActions={<CitizenActions />} />;
+  return <PublicSquareHome />;
 }

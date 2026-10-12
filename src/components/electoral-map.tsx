@@ -28,6 +28,7 @@ import {
   type ElectoralMapObservation,
 } from "@/lib/geography";
 import "./electoral-map.css";
+import { publicPath } from "@/lib/public-path";
 
 type ProvinceProperties = {
   name: string;
@@ -261,7 +262,7 @@ export default function ElectoralMap({
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch("/data/provinces.geojson", { signal: controller.signal })
+    fetch(publicPath("/data/provinces.geojson"), { signal: controller.signal })
       .then((response) => {
         if (!response.ok) throw new Error("Boundary file unavailable");
         return response.json() as Promise<Provinces>;
@@ -815,7 +816,7 @@ export default function ElectoralMap({
           {useSvg &&
             "Your browser is using the accessible map overview because WebGL is unavailable."}{" "}
           <a
-            href="/data/boundaries.metadata.json"
+            href={publicPath("/data/boundaries.metadata.json")}
             target="_blank"
             rel="noreferrer"
           >

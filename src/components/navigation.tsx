@@ -5,18 +5,26 @@ import { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { ArrowUpRight, Command, Database, Menu, Search, X } from "lucide-react";
 import { articles } from "@/lib/articles";
+import BrandLogo from "@/components/brand-logo";
+import "./site-shell.css";
 const links = [
-  { label: "Overview", href: "/" },
+  { label: "Overview", href: "/overview" },
   { label: "Take part", href: "/participation" },
   { label: "Bills", href: "/bills" },
   { label: "Municipalities", href: "/municipalities" },
-  { label: "Election history", href: "/history" },
-  { label: "Data explorer", href: "/explorer" },
+  { label: "Elections", href: "/history" },
+  { label: "Open data", href: "/explorer" },
   { label: "Research", href: "/research" },
-  { label: "Methodology", href: "/methodology" },
+  { label: "Sources", href: "/methodology" },
 ];
 const searchItems = [
+  { label: "The Public Square: home", href: "/" },
   ...links,
+  { label: "Election history and municipal turnout", href: "/history" },
+  {
+    label: "Data explorer: download election data and participation gaps",
+    href: "/explorer",
+  },
   { label: "Voter registration and age composition", href: "/registration" },
   { label: "Youth age profiles and participation", href: "/youth" },
   { label: "Electoral geography and provincial map", href: "/map" },
@@ -58,7 +66,7 @@ const searchItems = [
     label: "Hypothetical participation scenarios",
     href: "/youth#scenario-lab",
   },
-  { label: "About MORA", href: "/about" },
+  { label: "About The Public Square", href: "/about" },
   { label: "Contact and data corrections", href: "/contact" },
   { label: "Privacy policy", href: "/privacy" },
   { label: "Cookie policy", href: "/cookies" },
@@ -70,6 +78,11 @@ export default function Navigation() {
   const [open, setOpen] = useState(false);
   const [mobile, setMobile] = useState(false);
   const [query, setQuery] = useState("");
+  const isActive = (href: string) =>
+    pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
+  const results = searchItems.filter((item) =>
+    item.label.toLowerCase().includes(query.trim().toLowerCase()),
+  );
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -85,19 +98,14 @@ export default function Navigation() {
       <a href="#main" className="skip-link">
         Skip to content
       </a>
-      <header className="nav-shell">
-        <Link prefetch={false} href="/" className="brand">
-          <span className="monogram" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-            <i />
-            <i />
-          </span>
-          <span>
-            MORA <span className="brand-sub">DATA CENTRE</span>
-            <span className="sr-only"> home</span>
-          </span>
+      <header className="nav-shell public-square-nav">
+        <Link
+          prefetch={false}
+          href="/"
+          className="brand"
+          aria-label="The Public Square home"
+        >
+          <BrandLogo light />
         </Link>
         <nav aria-label="Primary" className="desktop-nav">
           {links.map((l) => (
@@ -105,12 +113,8 @@ export default function Navigation() {
               prefetch={false}
               key={l.href}
               href={l.href}
-              className={
-                pathname === l.href ||
-                (l.href !== "/" && pathname.startsWith(l.href))
-                  ? "active"
-                  : ""
-              }
+              className={isActive(l.href) ? "active" : ""}
+              aria-current={isActive(l.href) ? "page" : undefined}
             >
               {l.label}
             </Link>
@@ -127,29 +131,84 @@ export default function Navigation() {
           <Link prefetch={false} href="/explorer" className="nav-data">
             <Database size={14} /> Open data <ArrowUpRight size={13} />
           </Link>
-          <button
-            className="icon-button mobile-menu-button"
-            aria-label="Toggle navigation"
-            aria-expanded={mobile}
-            onClick={() => setMobile(!mobile)}
-          >
-            {mobile ? <X size={20} /> : <Menu size={20} />}
-          </button>
-        </div>
-        {mobile && (
-          <nav className="mobile-nav" aria-label="Mobile">
-            {links.map((l) => (
-              <Link
-                prefetch={false}
-                key={l.href}
-                href={l.href}
-                onClick={() => setMobile(false)}
+          <Dialog.Root open={mobile} onOpenChange={setMobile}>
+            <Dialog.Trigger asChild>
+              <button
+                className="icon-button mobile-menu-button"
+                aria-label="Toggle navigation"
               >
-                {l.label}
-              </Link>
-            ))}
-          </nav>
-        )}
+                <Menu size={20} />
+              </button>
+            </Dialog.Trigger>
+            <Dialog.Portal>
+              <Dialog.Overlay className="mobile-menu-overlay" />
+              <Dialog.Content className="mobile-nav mobile-menu-dialog">
+                <div className="mobile-menu-heading">
+                  <div>
+                    <Dialog.Title>Explore The Public Square</Dialog.Title>
+                    <Dialog.Description>
+                      Evidence, understanding and citizen action.
+                    </Dialog.Description>
+                  </div>
+                  <Dialog.Close
+                    className="icon-button"
+                    aria-label="Close navigation"
+                  >
+                    <X size={20} />
+                  </Dialog.Close>
+                </div>
+                <nav aria-label="Mobile">
+                  {[{ label: "Home", href: "/" }, ...links].map((l) => (
+                    <Link
+                      prefetch={false}
+                      key={l.href}
+                      href={l.href}
+                      className={isActive(l.href) ? "active" : ""}
+                      aria-current={isActive(l.href) ? "page" : undefined}
+                      onClick={() => setMobile(false)}
+                    >
+                      {l.label}
+                      <ArrowUpRight size={16} aria-hidden="true" />
+                    </Link>
+                  ))}
+                </nav>
+                <div
+                  className="mobile-menu-secondary"
+                  aria-label="More electoral tools"
+                >
+                  <Link
+                    prefetch={false}
+                    href="/registration"
+                    onClick={() => setMobile(false)}
+                  >
+                    Voter registration
+                  </Link>
+                  <Link
+                    prefetch={false}
+                    href="/youth"
+                    onClick={() => setMobile(false)}
+                  >
+                    Youth participation
+                  </Link>
+                  <Link
+                    prefetch={false}
+                    href="/map"
+                    onClick={() => setMobile(false)}
+                  >
+                    Explore the map
+                  </Link>
+                  <Link
+                    prefetch={false}
+                    href="/comparison"
+                    onClick={() => setMobile(false)}
+                  >
+                    Compare elections
+                  </Link>
+                </div>
+              </Dialog.Content>
+            </Dialog.Portal>
+          </Dialog.Root>
+        </div>
       </header>
       <Dialog.Root open={open} onOpenChange={setOpen}>
         <Dialog.Portal>
@@ -157,41 +216,35 @@ export default function Navigation() {
           <Dialog.Content className="search-dialog">
             <div className="search-heading">
               <Search size={20} />
-              <Dialog.Title>Search the data centre</Dialog.Title>
+              <Dialog.Title>Search The Public Square</Dialog.Title>
               <Dialog.Close className="icon-button" aria-label="Close search">
                 <X size={18} />
               </Dialog.Close>
             </div>
             <Dialog.Description className="muted">
-              Find pages, datasets, research, and methodology.
+              Find election data, bills, public participation and research.
             </Dialog.Description>
             <input
               autoFocus
               className="search-input"
               aria-label="Search"
-              placeholder="Try “turnout” or “youth”…"
+              placeholder="Try “turnout”, “bills” or “municipalities”…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
             <div className="search-results">
-              {searchItems
-                .filter((l) =>
-                  l.label.toLowerCase().includes(query.toLowerCase()),
-                )
-                .map((l) => (
-                  <Link
-                    prefetch={false}
-                    key={l.label}
-                    href={l.href}
-                    onClick={() => setOpen(false)}
-                  >
-                    <span>{l.label}</span>
-                    <ArrowUpRight size={16} />
-                  </Link>
-                ))}
-              {!searchItems.some((l) =>
-                l.label.toLowerCase().includes(query.toLowerCase()),
-              ) && (
+              {results.map((l) => (
+                <Link
+                  prefetch={false}
+                  key={l.label}
+                  href={l.href}
+                  onClick={() => setOpen(false)}
+                >
+                  <span>{l.label}</span>
+                  <ArrowUpRight size={16} />
+                </Link>
+              ))}
+              {results.length === 0 && (
                 <p className="empty-state">No matching pages or datasets.</p>
               )}
             </div>

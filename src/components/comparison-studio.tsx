@@ -297,8 +297,8 @@ export default function ComparisonStudio() {
     : "";
   const sourceNote =
     (supported
-      ? `Sources: ${[...new Set([sourceFor(recordA), sourceFor(recordB)].filter(Boolean).map((source) => `${source!.organisation} — ${source!.title} (observed ${source!.observedAt})`))].join("; ") || "MORA source registry"}. Reference years: ${recordA?.year || "unavailable"}, ${recordB?.year || "unavailable"}. Geography: ${filters.mode === "provinces" ? `${filters.provinceA} / ${filters.provinceB}; 2016 electoral boundaries` : "South Africa"}.${filters.mode === "ages" ? ` Age bands: ${filters.ageA} / ${filters.ageB}. Registration shares use each matching dated national roll, not eligible citizens. Published age turnout is available only for 2016, rounded to whole percentages.` : ""}`
-      : "Source: MORA source registry. Comparable metropolitan observations have not been verified.") +
+      ? `Sources: ${[...new Set([sourceFor(recordA), sourceFor(recordB)].filter(Boolean).map((source) => `${source!.organisation} — ${source!.title} (observed ${source!.observedAt})`))].join("; ") || "The Public Square source registry"}. Reference years: ${recordA?.year || "unavailable"}, ${recordB?.year || "unavailable"}. Geography: ${filters.mode === "provinces" ? `${filters.provinceA} / ${filters.provinceB}; 2016 electoral boundaries` : "South Africa"}.${filters.mode === "ages" ? ` Age bands: ${filters.ageA} / ${filters.ageB}. Registration shares use each matching dated national roll, not eligible citizens. Published age turnout is available only for 2016, rounded to whole percentages.` : ""}`
+      : "Source: The Public Square source registry. Comparable metropolitan observations have not been verified.") +
     (populationNotes ? ` Population-estimate notes: ${populationNotes}` : "");
   const emptyMessage =
     comparableElectorateRateMetrics.includes(filters.metric) &&
@@ -1016,7 +1016,12 @@ export default function ComparisonStudio() {
             Download comparison CSV ↓
           </button>
         </div>
-        <div style={{ overflowX: "auto" }}>
+        <div
+          style={{ overflowX: "auto" }}
+          tabIndex={0}
+          role="region"
+          aria-label="Scrollable comparison results"
+        >
           <table className="data-table">
             <caption
               style={{
@@ -1103,7 +1108,12 @@ export default function ComparisonStudio() {
                 Download age profiles CSV ↓
               </button>
             </div>
-            <div className="table-scroll">
+            <div
+              className="table-scroll"
+              tabIndex={0}
+              role="region"
+              aria-label="Scrollable age-band comparison data"
+            >
               <table className="data-table">
                 <caption className="sr-only">
                   All eight national registration age bands. A reference{" "}

@@ -1,34 +1,34 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Terms of Use | MORA",
+  title: "Terms of Use | The Public Square",
   description:
-    "Responsible use of MORA research, source data and scenario tools.",
+    "Responsible use of The Public Square’s research, civic notices, source data and scenario tools.",
 };
 
 export default function TermsPage() {
   return (
     <div className="page-shell">
       <header className="page-intro">
-        <p className="eyebrow">Terms of use · 11 October 2026</p>
+        <p className="eyebrow">Terms of use · 12 October 2026</p>
         <h1>
           Use the evidence.
           <br />
           Keep its context.
         </h1>
         <p className="muted">
-          MORA is a research interface for public electoral information and
-          transparent analysis.
+          The Public Square connects public electoral information, transparent
+          analysis and source-linked opportunities for citizen action.
         </p>
       </header>
       <article className="prose panel" style={{ maxWidth: 900 }}>
         <h2>Research scope</h2>
         <p>
-          Information is provided for research and general understanding. MORA
-          is not an official election-results service, legal adviser, electoral
-          authority or political representative. Confirm consequential election,
-          registration and legal information with the relevant official
-          authority.
+          Information is provided for research and general understanding. The
+          Public Square is not an official election-results service, legal
+          adviser, electoral authority or political representative. Confirm
+          consequential election, registration and legal information with the
+          relevant official authority.
         </p>
         <h2>Dates, definitions and uncertainty</h2>
         <p>
@@ -48,10 +48,16 @@ export default function TermsPage() {
           Original datasets and external publications remain subject to their
           publishers’ licences and terms. A link or CSV export does not grant
           additional rights. Consult the original source before redistribution.
-          Attribute original sources and identify MORA’s derived calculations
-          when reproducing them.
+          Attribute original sources and identify The Public Square’s derived
+          calculations when reproducing them.
         </p>
         <h2>Corrections and availability</h2>
+        <p>
+          Civic notices are a curated snapshot, not a complete live feed of all
+          government activity. Confirm deadlines, venues, joining arrangements
+          and submission instructions with the issuer before acting. A verified
+          municipal topic page does not establish that a consultation is open.
+        </p>
         <p>
           Sources, routes and datasets can change. We aim to make limitations
           visible and corrections reproducible, but no completeness or

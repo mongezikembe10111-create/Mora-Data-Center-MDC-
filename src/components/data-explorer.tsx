@@ -408,7 +408,7 @@ export default function DataExplorer({
         .join(
           "; ",
         )}. Reference: dates shown in the table. Geography: ${filters.province === "all" ? "South Africa" : filters.province}. Age coverage: ${filters.age === "all" ? "all ages" : filters.age}. ${populationNotes.join(" ")} ${qualificationNotes.join(" ")}`
-    : "Source: MORA source registry. No verified observations available for the selected scope.";
+    : "Source: The Public Square source registry. No verified observations available for the selected scope.";
 
   const option = useMemo<EChartsOption>(() => {
     const chronological = [...rows].sort((a, b) => a.year - b.year);

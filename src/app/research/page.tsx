@@ -3,7 +3,7 @@ import { ArrowUpRight, BookOpen, Clock3 } from "lucide-react";
 import { articles } from "@/lib/articles";
 
 export const metadata = {
-  title: "Research & Insights | MORA",
+  title: "Research & Insights | The Public Square",
   description:
     "Independent explainers on South African electoral participation, youth registration and responsible democratic analysis.",
 };
@@ -19,7 +19,7 @@ export default function ResearchPage() {
         </h1>
         <p className="muted">
           Ideas, evidence and methods for understanding South Africa’s
-          democratic participation. Published by MORA.
+          democratic participation. Published by The Public Square.
         </p>
       </header>
       <div className="panel" style={{ marginBottom: 28 }}>

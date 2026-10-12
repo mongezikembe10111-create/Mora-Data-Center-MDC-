@@ -7,6 +7,8 @@ out/
 playwright-report/
 test-results/
 .next-e2e/
+.next-static/
+.next-brand-dev/
 next-env.d.ts
 __pycache__/
 *.pyc

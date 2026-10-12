@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowUpRight,
   Building2,
@@ -158,6 +158,10 @@ export default function MunicipalityDirectory() {
   const [topic, setTopic] = useState("all");
   const [page, setPage] = useState(1);
   const [exported, setExported] = useState(false);
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search).get("q");
+    if (query) setSearch(query);
+  }, []);
   const rows = useMemo(
     () => filterMunicipalities({ search, province, type, topic }),
     [search, province, type, topic],

@@ -1,16 +1,16 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Accessibility Statement | MORA",
+  title: "Accessibility Statement | The Public Square",
   description:
-    "Accessibility features, limitations and feedback for MORA Data Centre.",
+    "Accessibility features, limitations and feedback for The Public Square.",
 };
 
 export default function AccessibilityPage() {
   return (
     <div className="page-shell">
       <header className="page-intro">
-        <p className="eyebrow">Accessibility statement · 11 October 2026</p>
+        <p className="eyebrow">Accessibility statement · 12 October 2026</p>
         <h1>
           Evidence should
           <br />

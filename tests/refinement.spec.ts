@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 test("participation gap separates estimated residents from the documented electorate", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/overview");
   const gap = page.locator("#participation-gap");
   await gap.scrollIntoViewIfNeeded();
   await expect(gap.getByLabel("Gap population basis")).toHaveValue(
