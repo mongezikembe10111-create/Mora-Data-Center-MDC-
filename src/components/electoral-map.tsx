@@ -2,17 +2,18 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
-import type { Map as MapLibreMap } from "maplibre-gl";
+import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { bbox } from "@turf/turf";
-import { geoMercator, geoPath } from "d3-geo";
-import type {
-  Feature,
-  FeatureCollection,
-  MultiPolygon,
-  Polygon,
-} from "geojson";
-import { Expand, Layers3, MapPin, Minus, Plus, RotateCcw } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronRight,
+  Expand,
+  Layers3,
+  Minus,
+  Plus,
+  RotateCcw,
+} from "lucide-react";
 import {
   currentRegistrationObservation,
   getSource,
@@ -20,32 +21,32 @@ import {
   provinces,
 } from "@/lib/data";
 import {
-  electoralMapColor,
   getElectoralMapObservation,
   getMapIntervals,
   REGISTRATION_MAP_DATE,
   REGISTRATION_MAP_YEAR,
   type ElectoralMapObservation,
 } from "@/lib/geography";
-import "./electoral-map.css";
+import {
+  MUNICIPAL_BOUNDARY_PATH,
+  provinceBoundaryPath,
+  WARD_BOUNDARY_INFO,
+  type MunicipalityCollection,
+  type WardCollection,
+} from "@/lib/ward-boundaries";
 import { publicPath } from "@/lib/public-path";
+import MapSvg, {
+  mainlandFeature,
+  type MapGeometry,
+  type Provinces,
+} from "./map-svg";
+import "./electoral-map.css";
 
-type ProvinceProperties = {
-  name: string;
-  iso_3166_2: string;
-  label_longitude: number;
-  label_latitude: number;
-};
-type ProvinceFeature = Feature<Polygon | MultiPolygon, ProvinceProperties>;
-type Provinces = FeatureCollection<Polygon | MultiPolygon, ProvinceProperties>;
 type Props = {
   year: number;
   province: string;
   onProvinceChange: (name: string) => void;
 };
-
-const YEARS = municipalYears;
-const PROVINCES: readonly string[] = provinces;
 const METRICS = {
   registration: "Voter registration",
   turnout: "Voter turnout",
@@ -55,156 +56,48 @@ const METRICS = {
   party: "Party performance",
 };
 type Metric = keyof typeof METRICS;
+const EMPTY = { type: "FeatureCollection" as const, features: [] };
 
 function formatObservation(observation: ElectoralMapObservation) {
   return observation.unit === "percent"
     ? `${observation.value.toFixed(2)}%`
     : observation.value.toLocaleString("en-ZA");
 }
-
-// Keep the downloaded geometry intact. Only the camera and SVG overview focus
-// on the largest polygon, so Western Cape's offshore islands do not distort fit.
-function mainlandFeature(feature: ProvinceFeature): ProvinceFeature {
-  if (feature.geometry.type === "Polygon") return feature;
-  const polygons = feature.geometry.coordinates;
-  const biggest = polygons.reduce((largest, candidate) => {
-    const polygonArea = (ring: number[][]) =>
-      Math.abs(
-        ring.reduce((total, point, index) => {
-          const next = ring[(index + 1) % ring.length];
-          return total + point[0] * next[1] - next[0] * point[1];
-        }, 0),
-      );
-    return polygonArea(candidate[0]) > polygonArea(largest[0])
-      ? candidate
-      : largest;
-  });
-  return { ...feature, geometry: { type: "Polygon", coordinates: biggest } };
+function duration() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ? 0
+    : 600;
 }
-
-function fitProvince(
+function fitGeometry(
   map: MapLibreMap,
-  collection: Provinces,
-  name: string,
+  target: MapGeometry,
+  detail: boolean,
   animate = true,
 ) {
-  const selected = collection.features.find(
-    (feature) => feature.properties.name === name,
-  );
-  const target = selected
-    ? mainlandFeature(selected)
-    : {
-        ...collection,
-        features: collection.features.map(mainlandFeature),
-      };
   const bounds = bbox(target);
+  if (!bounds.every(Number.isFinite)) return;
+  const compact = map.getContainer().clientWidth < 500;
   map.fitBounds(
     [
       [bounds[0], bounds[1]],
       [bounds[2], bounds[3]],
     ],
     {
-      padding: selected ? 80 : { top: 56, bottom: 58, left: 38, right: 38 },
-      duration:
-        animate &&
-        !window.matchMedia("(prefers-reduced-motion: reduce)").matches
-          ? 650
-          : 0,
-      maxZoom: selected ? 7.4 : 5.5,
+      padding: {
+        top: 34,
+        bottom: 34,
+        left: compact ? 12 : 34,
+        right: compact ? 56 : 72,
+      },
+      duration: animate ? duration() : 0,
+      maxZoom: detail ? 15 : 7.5,
     },
   );
 }
-
-function SvgOverview({
-  data,
-  province,
-  mapYear,
-  metric,
-  onSelect,
-}: {
-  data: Provinces;
-  province: string;
-  mapYear: number;
-  metric: Metric;
-  onSelect: (name: string) => void;
-}) {
-  const { path, projection, features } = useMemo(() => {
-    const features = data.features.map(mainlandFeature);
-    const projection = geoMercator().fitExtent(
-      [
-        [32, 22],
-        [768, 390],
-      ],
-      { ...data, features },
-    );
-    return { path: geoPath(projection), projection, features };
-  }, [data]);
-
-  return (
-    <svg
-      className="electoral-map-svg"
-      viewBox="0 0 800 430"
-      role="group"
-      aria-label="South African provinces. Select a province for details."
-    >
-      {features.map((feature) => {
-        const observation = getElectoralMapObservation(
-          feature.properties.name,
-          mapYear,
-          metric,
-        );
-        return (
-          <path
-            key={feature.properties.name}
-            d={path(feature) ?? undefined}
-            className={`province-shape ${province === feature.properties.name ? "selected" : ""} ${observation ? "has-registration" : ""}`}
-            style={
-              observation
-                ? { fill: electoralMapColor(observation.value, metric) }
-                : undefined
-            }
-            role="button"
-            tabIndex={0}
-            aria-label={`Select ${feature.properties.name}${observation ? `, ${formatObservation(observation)} ${observation.label}` : ", data unavailable"}`}
-            aria-pressed={province === feature.properties.name}
-            onClick={() => onSelect(feature.properties.name)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                onSelect(feature.properties.name);
-              }
-            }}
-          >
-            <title>
-              {feature.properties.name} —{" "}
-              {observation
-                ? `${formatObservation(observation)} ${observation.label}, ${observation.observedAt}`
-                : "provincial electoral data unavailable"}
-            </title>
-          </path>
-        );
-      })}
-      {features.map((feature) => {
-        const point = projection([
-          feature.properties.label_longitude,
-          feature.properties.label_latitude,
-        ]);
-        return (
-          point && (
-            <text
-              key={feature.properties.name}
-              x={point[0]}
-              y={point[1]}
-              className="province-svg-label"
-              textAnchor="middle"
-            >
-              {feature.properties.name}
-            </text>
-          )
-        );
-      })}
-    </svg>
-  );
+async function boundaryFile<T>(path: string, signal: AbortSignal): Promise<T> {
+  const response = await fetch(publicPath(path), { signal });
+  if (!response.ok) throw new Error("Boundary file unavailable");
+  return response.json() as Promise<T>;
 }
 
 export default function ElectoralMap({
@@ -214,17 +107,44 @@ export default function ElectoralMap({
 }: Props) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
-  const callbackRef = useRef(onProvinceChange);
-  const selectedRef = useRef(province);
+  const callbacks = useRef({
+    onProvinceChange,
+    municipality: "",
+    province: "",
+  });
+  const refreshLabelsRef = useRef(() => {});
+  const markers = useRef<maplibregl.Marker[]>([]);
+  const municipalityCache = useRef<MunicipalityCollection | null>(null);
+  const wardCache = useRef(new Map<string, WardCollection>());
   const [data, setData] = useState<Provinces | null>(null);
+  const [municipalities, setMunicipalities] =
+    useState<MunicipalityCollection | null>(null);
+  const [wardData, setWardData] = useState<WardCollection | null>(null);
+  const [municipality, setMunicipality] = useState("");
+  const [ward, setWard] = useState("");
   const [mapYear, setMapYear] = useState(REGISTRATION_MAP_YEAR);
   const [metric, setMetric] = useState<Metric>("registration");
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [mapDrawn, setMapDrawn] = useState(false);
   const [useSvg, setUseSvg] = useState(false);
   const [boundaryError, setBoundaryError] = useState(false);
-
-  const selectedProvince = PROVINCES.includes(province) ? province : "";
+  const [wardStatus, setWardStatus] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
+  const [provinceReload, setProvinceReload] = useState(0);
+  const [wardReload, setWardReload] = useState(0);
+  const [svgZoom, setSvgZoom] = useState(1);
+  const selectedProvince = provinces.includes(
+    province as (typeof provinces)[number],
+  )
+    ? province
+    : "";
+  callbacks.current = {
+    onProvinceChange,
+    municipality,
+    province: selectedProvince,
+  };
   const hasRegistration =
     metric === "registration" && mapYear === REGISTRATION_MAP_YEAR;
   const hasHistoricalMeasure =
@@ -250,37 +170,151 @@ export default function ElectoralMap({
     year: "numeric",
     timeZone: "Africa/Johannesburg",
   });
-  callbackRef.current = onProvinceChange;
-  selectedRef.current = province;
+  const provinceMunicipalities = useMemo<MunicipalityCollection | null>(
+    () =>
+      municipalities && {
+        ...municipalities,
+        features: municipalities.features.filter(
+          (feature) => feature.properties.province === selectedProvince,
+        ),
+      },
+    [municipalities, selectedProvince],
+  );
+  const provinceWards = useMemo<WardCollection | null>(
+    () =>
+      wardData && {
+        ...wardData,
+        features: wardData.features.filter(
+          (feature) => feature.properties.province === selectedProvince,
+        ),
+      },
+    [wardData, selectedProvince],
+  );
+  const visibleWards = useMemo<WardCollection | null>(
+    () =>
+      provinceWards && {
+        ...provinceWards,
+        features: municipality
+          ? provinceWards.features.filter(
+              (feature) => feature.properties.municipalityCode === municipality,
+            )
+          : provinceWards.features,
+      },
+    [provinceWards, municipality],
+  );
+  const selectedMunicipality = provinceMunicipalities?.features.find(
+    (feature) => feature.properties.code === municipality,
+  );
+  const selectedWard = visibleWards?.features.find(
+    (feature) => feature.properties.wardId === ward,
+  );
+  const missingWardNumbers = WARD_BOUNDARY_INFO.sourceAnomalies.find(
+    (entry) => entry.municipalityCode === municipality,
+  );
+  const municipalityOptions = useMemo(
+    () =>
+      [...(provinceMunicipalities?.features ?? [])].sort((a, b) =>
+        a.properties.name.localeCompare(b.properties.name),
+      ),
+    [provinceMunicipalities],
+  );
+  const wardOptions = useMemo(
+    () =>
+      municipality
+        ? [...(visibleWards?.features ?? [])].sort(
+            (a, b) => a.properties.wardNumber - b.properties.wardNumber,
+          )
+        : [],
+    [visibleWards, municipality],
+  );
+  const target = useMemo<MapGeometry | null>(() => {
+    if (selectedWard) return selectedWard;
+    if (selectedMunicipality) return selectedMunicipality;
+    const selected = data?.features.find(
+      (feature) => feature.properties.name === selectedProvince,
+    );
+    if (selected) return mainlandFeature(selected);
+    return data
+      ? { ...data, features: data.features.map(mainlandFeature) }
+      : null;
+  }, [selectedWard, selectedMunicipality, data, selectedProvince]);
 
-  // Keep the observed snapshot separate from the global municipal election year.
   useEffect(() => {
     setMapYear((currentYear) =>
       currentYear === REGISTRATION_MAP_YEAR ? currentYear : year,
     );
   }, [year]);
-
   useEffect(() => {
     const controller = new AbortController();
-    fetch(publicPath("/data/provinces.geojson"), { signal: controller.signal })
-      .then((response) => {
-        if (!response.ok) throw new Error("Boundary file unavailable");
-        return response.json() as Promise<Provinces>;
-      })
+    setBoundaryError(false);
+    boundaryFile<Provinces>("/data/provinces.geojson", controller.signal)
       .then(setData)
       .catch((error: Error) => {
         if (error.name !== "AbortError") setBoundaryError(true);
       });
     return () => controller.abort();
-  }, []);
+  }, [provinceReload]);
+  useEffect(() => {
+    setMunicipality("");
+    setWard("");
+    setSvgZoom(1);
+    setHoveredProvince(null);
+    if (!selectedProvince) {
+      setWardStatus("idle");
+      setWardData(null);
+      return;
+    }
+    const path = provinceBoundaryPath(selectedProvince);
+    if (!path) {
+      setWardStatus("error");
+      setWardData(null);
+      return;
+    }
+    const controller = new AbortController();
+    setWardStatus("loading");
+    setWardData(null);
+    Promise.all([
+      municipalityCache.current
+        ? Promise.resolve(municipalityCache.current)
+        : boundaryFile<MunicipalityCollection>(
+            MUNICIPAL_BOUNDARY_PATH,
+            controller.signal,
+          ),
+      wardCache.current.has(selectedProvince)
+        ? Promise.resolve(wardCache.current.get(selectedProvince)!)
+        : boundaryFile<WardCollection>(path, controller.signal),
+    ])
+      .then(([municipal, wards]) => {
+        if (controller.signal.aborted) return;
+        municipalityCache.current = municipal;
+        wardCache.current.set(selectedProvince, wards);
+        setMunicipalities(municipal);
+        setWardData(wards);
+        setWardStatus("ready");
+      })
+      .catch((error: Error) => {
+        if (error.name !== "AbortError") setWardStatus("error");
+      });
+    return () => controller.abort();
+  }, [selectedProvince, wardReload]);
+  useEffect(() => {
+    setSvgZoom(1);
+  }, [municipality, ward]);
 
   useEffect(() => {
     if (!data || !mapContainer.current) return;
     let map: MapLibreMap;
-    let hoverId: string | number | undefined;
-    const markers: maplibregl.Marker[] = [];
-    let resizeObserver: ResizeObserver | null = null;
+    let observer: ResizeObserver | null = null;
+    let sourceWatchdog: ReturnType<typeof setTimeout> | undefined;
+    let disposed = false;
+    setMapReady(false);
+    setMapDrawn(false);
     try {
+      // MapLibre 6 uses a separate module worker. Its import.meta.url default
+      // cannot resolve through Next's bundle, so serve matching local assets.
+      maplibregl.setWorkerUrl(
+        publicPath("/vendor/maplibre/maplibre-gl-worker.mjs"),
+      );
       map = new maplibregl.Map({
         container: mapContainer.current,
         style: {
@@ -290,66 +324,130 @@ export default function ElectoralMap({
             {
               id: "background",
               type: "background",
-              paint: { "background-color": "#0e1421" },
+              paint: { "background-color": "#0b1523" },
             },
           ],
         },
         center: [25, -29],
         zoom: 4,
-        minZoom: 3,
-        maxZoom: 9,
+        minZoom: 2,
+        maxZoom: 18,
         attributionControl: false,
         renderWorldCopies: false,
         dragRotate: false,
         touchPitch: false,
         pitchWithRotate: false,
-        maxBounds: [
-          [12, -38],
-          [37, -19],
-        ],
+        // fitGeometry frames each selection. A national maxBounds would impose
+        // a minimum zoom on wide canvases and clip the north/south provinces.
       });
       mapRef.current = map;
+      const refreshLabels = () => {
+        if (disposed) return;
+        const frame = map.getContainer().getBoundingClientRect();
+        const occupied: DOMRect[] = [];
+        for (const marker of markers.current) {
+          const element = marker.getElement();
+          element.style.display =
+            !callbacks.current.province && frame.width >= 500 ? "" : "none";
+          element.hidden = !!callbacks.current.province || frame.width < 500;
+          if (element.hidden) continue;
+          const rect = element.getBoundingClientRect();
+          const outside =
+            rect.left < frame.left + 8 ||
+            rect.right > frame.right - 8 ||
+            rect.top < frame.top + 8 ||
+            rect.bottom > frame.bottom - 8;
+          const overlaps = occupied.some(
+            (other) =>
+              rect.left < other.right + 5 &&
+              rect.right + 5 > other.left &&
+              rect.top < other.bottom + 5 &&
+              rect.bottom + 5 > other.top,
+          );
+          if (outside || overlaps) {
+            element.style.display = "none";
+            element.hidden = true;
+          } else occupied.push(rect);
+        }
+      };
+      refreshLabelsRef.current = refreshLabels;
       map.touchZoomRotate.disableRotation();
-      // Preserve normal page scrolling. Explicit controls and touch gestures
-      // still offer zoom; keyboard navigation also remains available.
+      // Preserve page scrolling; explicit controls, pinch and keyboard still zoom.
       map.scrollZoom.disable();
       map.on("load", () => {
-        map.addSource("provinces", { type: "geojson", data });
+        map.addSource("provinces", { type: "geojson", data, generateId: true });
+        map.addSource("municipalities", {
+          type: "geojson",
+          data: EMPTY,
+          promoteId: "code",
+        });
+        map.addSource("wards", {
+          type: "geojson",
+          data: EMPTY,
+          promoteId: "wardId",
+        });
         map.addLayer({
           id: "province-fill",
           type: "fill",
           source: "provinces",
-          paint: {
-            "fill-color": [
-              "case",
-              ["boolean", ["feature-state", "selected"], false],
-              "#8470e8",
-              ["boolean", ["feature-state", "hover"], false],
-              "#544e72",
-              "#34384c",
-            ],
-            "fill-opacity": 0.88,
-          },
+          paint: { "fill-color": "#34384c", "fill-opacity": 0.9 },
         });
         map.addLayer({
           id: "province-lines",
           type: "line",
           source: "provinces",
+          paint: { "line-color": "#8994b3", "line-width": 1.3 },
+        });
+        map.addLayer({
+          id: "municipality-fill",
+          type: "fill",
+          source: "municipalities",
+          paint: { "fill-color": "#14355a", "fill-opacity": 0.7 },
+        });
+        map.addLayer({
+          id: "ward-fill",
+          type: "fill",
+          source: "wards",
+          paint: { "fill-color": "#3b82f6", "fill-opacity": 0.13 },
+        });
+        map.addLayer({
+          id: "ward-lines",
+          type: "line",
+          source: "wards",
           paint: {
-            "line-color": [
-              "case",
-              ["boolean", ["feature-state", "selected"], false],
-              "#c7baff",
-              "#6c7391",
-            ],
+            "line-color": "#78a8e2",
             "line-width": [
-              "case",
-              ["boolean", ["feature-state", "selected"], false],
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              5,
+              0.45,
+              10,
+              1.2,
+              15,
               2,
-              1.1,
             ],
+            "line-opacity": 0.8,
           },
         });
+        map.addLayer({
+          id: "municipality-lines",
+          type: "line",
+          source: "municipalities",
+          paint: { "line-color": "#a3bbdc", "line-width": 1.8 },
+        });
+        map.addLayer({
+          id: "selected-ward",
+          type: "line",
+          source: "wards",
+          filter: ["==", ["get", "wardId"], ""],
+          paint: { "line-color": "#a3ff3d", "line-width": 3 },
+        });
+        // Native Worker errors can leave MapLibre's actor pending without a
+        // map error. Keep the SVG alternative available in that case too.
+        sourceWatchdog = setTimeout(() => {
+          if (!disposed && !map.isSourceLoaded("provinces")) setUseSvg(true);
+        }, 12_000);
         for (const feature of data.features) {
           const button = document.createElement("button");
           button.className = "province-map-label";
@@ -357,13 +455,13 @@ export default function ElectoralMap({
           button.type = "button";
           button.setAttribute(
             "aria-label",
-            `Select ${feature.properties.name}`,
+            `Explore ${feature.properties.name} wards`,
           );
           button.addEventListener("click", (event) => {
             event.stopPropagation();
-            callbackRef.current(feature.properties.name);
+            callbacks.current.onProvinceChange(feature.properties.name);
           });
-          markers.push(
+          markers.current.push(
             new maplibregl.Marker({ element: button })
               .setLngLat([
                 feature.properties.label_longitude,
@@ -372,58 +470,77 @@ export default function ElectoralMap({
               .addTo(map),
           );
         }
-        map.on("mousemove", "province-fill", (event) => {
-          if (hoverId !== undefined)
-            map.setFeatureState(
-              { source: "provinces", id: hoverId },
-              { hover: false },
-            );
-          const feature = event.features?.[0];
-          hoverId = feature?.id;
-          if (hoverId !== undefined)
-            map.setFeatureState(
-              { source: "provinces", id: hoverId },
-              { hover: true },
-            );
-          setHoveredProvince(feature?.properties?.name ?? null);
-          map.getCanvas().style.cursor = "pointer";
-        });
-        map.on("mouseleave", "province-fill", () => {
-          if (hoverId !== undefined)
-            map.setFeatureState(
-              { source: "provinces", id: hoverId },
-              { hover: false },
-            );
-          hoverId = undefined;
-          setHoveredProvince(null);
-          map.getCanvas().style.cursor = "";
-        });
-        map.on("click", "province-fill", (event) => {
-          const name = event.features?.[0]?.properties?.name;
-          if (name) callbackRef.current(String(name));
-        });
-        for (const feature of data.features) {
-          map.setFeatureState(
-            { source: "provinces", id: feature.id! },
-            { selected: feature.properties.name === selectedRef.current },
+        map.on("mousemove", (event) => {
+          const hit = map.queryRenderedFeatures(event.point, {
+            layers: ["ward-fill", "municipality-fill", "province-fill"],
+          })[0];
+          map.getCanvas().style.cursor = hit ? "pointer" : "";
+          setHoveredProvince(
+            hit?.layer.id === "province-fill"
+              ? String(hit.properties.name)
+              : null,
           );
-        }
-        fitProvince(map, data, selectedRef.current, false);
+        });
+        map.on("mouseout", () => setHoveredProvince(null));
+        map.on("click", (event) => {
+          const hits = map.queryRenderedFeatures(event.point, {
+            layers: ["ward-fill", "municipality-fill", "province-fill"],
+          });
+          const wardHit = hits.find(
+            (feature) => feature.layer.id === "ward-fill",
+          );
+          const municipalHit = hits.find(
+            (feature) => feature.layer.id === "municipality-fill",
+          );
+          if (wardHit) {
+            const code = String(wardHit.properties.municipalityCode);
+            setMunicipality(code);
+            setWard(
+              callbacks.current.municipality
+                ? String(wardHit.properties.wardId)
+                : "",
+            );
+          } else if (municipalHit) {
+            setMunicipality(String(municipalHit.properties.code));
+            setWard("");
+          } else {
+            const name = hits.find(
+              (feature) => feature.layer.id === "province-fill",
+            )?.properties.name;
+            if (name) callbacks.current.onProvinceChange(String(name));
+          }
+        });
         setMapReady(true);
       });
+      map.on("sourcedata", (event) => {
+        if (disposed || !map.getSource("provinces")) return;
+        if (event.sourceId === "provinces" && map.isSourceLoaded("provinces")) {
+          clearTimeout(sourceWatchdog);
+          setMapDrawn(true);
+          refreshLabels();
+        }
+      });
+      map.on("moveend", refreshLabels);
       map.on("error", () => setUseSvg(true));
       map
         .getCanvas()
         .addEventListener("webglcontextlost", () => setUseSvg(true));
-      resizeObserver = new ResizeObserver(() => map.resize());
-      resizeObserver.observe(mapContainer.current);
+      observer = new ResizeObserver(() => {
+        map.resize();
+        requestAnimationFrame(refreshLabels);
+      });
+      observer.observe(mapContainer.current);
     } catch {
       setUseSvg(true);
       return;
     }
     return () => {
-      resizeObserver?.disconnect();
-      markers.forEach((marker) => marker.remove());
+      disposed = true;
+      clearTimeout(sourceWatchdog);
+      refreshLabelsRef.current = () => {};
+      observer?.disconnect();
+      markers.current.forEach((marker) => marker.remove());
+      markers.current = [];
       map.remove();
       mapRef.current = null;
     };
@@ -431,79 +548,135 @@ export default function ElectoralMap({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady || !data) return;
-    for (const feature of data.features) {
-      map.setFeatureState(
-        { source: "provinces", id: feature.id! },
-        { selected: feature.properties.name === selectedProvince },
-      );
-    }
-    fitProvince(map, data, selectedProvince);
-  }, [selectedProvince, data, mapReady]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapReady || !data) return;
-    for (const feature of data.features) {
+    if (!map || !mapReady || !data || !map.getLayer("province-fill")) return;
+    refreshLabelsRef.current();
+    map.setFilter(
+      "province-fill",
+      selectedProvince ? ["==", ["get", "name"], selectedProvince] : null,
+    );
+    map.setFilter(
+      "province-lines",
+      selectedProvince ? ["==", ["get", "name"], selectedProvince] : null,
+    );
+    const municipalSource = map.getSource("municipalities") as GeoJSONSource;
+    const wardSource = map.getSource("wards") as GeoJSONSource;
+    municipalSource.setData(provinceMunicipalities ?? EMPTY);
+    wardSource.setData(visibleWards ?? EMPTY);
+    map.setFilter("selected-ward", ["==", ["get", "wardId"], ward]);
+    map.setPaintProperty("ward-fill", "fill-color", [
+      "case",
+      ["==", ["get", "wardId"], ward],
+      "#a3ff3d",
+      "#3b82f6",
+    ]);
+    map.setPaintProperty("ward-fill", "fill-opacity", [
+      "case",
+      ["==", ["get", "wardId"], ward],
+      0.28,
+      0.13,
+    ]);
+    map.setPaintProperty(
+      "municipality-fill",
+      "fill-opacity",
+      municipality ? 0.3 : 0.7,
+    );
+    // Sub-provincial geometry never inherits a province's election measure.
+    map.setPaintProperty(
+      "province-fill",
+      "fill-color",
+      selectedProvince
+        ? "#10253c"
+        : hasMappedValues
+          ? [
+              "case",
+              ["<", ["coalesce", ["feature-state", "mapValue"], -1], 0],
+              "#34384c",
+              [
+                "step",
+                ["coalesce", ["feature-state", "mapValue"], 0],
+                intervals[0].color,
+                ...intervals
+                  .slice(1)
+                  .flatMap((interval) => [interval.min, interval.color]),
+              ],
+            ]
+          : "#34384c",
+    );
+    data.features.forEach((feature, index) => {
       const observation = getElectoralMapObservation(
         feature.properties.name,
         mapYear,
         metric,
       );
       map.setFeatureState(
-        { source: "provinces", id: feature.id! },
+        { source: "provinces", id: feature.id ?? index },
         { mapValue: observation?.value ?? null },
       );
-    }
-    map.setPaintProperty(
-      "province-fill",
-      "fill-color",
-      hasMappedValues
-        ? [
-            "case",
-            ["<", ["coalesce", ["feature-state", "mapValue"], -1], 0],
-            "#34384c",
-            [
-              "step",
-              ["coalesce", ["feature-state", "mapValue"], 0],
-              intervals[0].color,
-              ...intervals
-                .slice(1)
-                .flatMap((interval) => [interval.min, interval.color]),
-            ],
-          ]
-        : [
-            "case",
-            ["boolean", ["feature-state", "selected"], false],
-            "#8470e8",
-            ["boolean", ["feature-state", "hover"], false],
-            "#544e72",
-            "#34384c",
-          ],
-    );
-    map.setPaintProperty("province-fill", "fill-opacity", [
-      "case",
-      ["boolean", ["feature-state", "hover"], false],
-      1,
-      0.9,
-    ]);
-  }, [hasMappedValues, mapYear, metric, mapReady, data, intervals]);
+    });
+  }, [
+    mapReady,
+    data,
+    selectedProvince,
+    provinceMunicipalities,
+    visibleWards,
+    municipality,
+    ward,
+    hasMappedValues,
+    intervals,
+    mapYear,
+    metric,
+  ]);
+  useEffect(() => {
+    if (mapRef.current && mapReady && target)
+      fitGeometry(mapRef.current, target, !!(municipality || ward));
+  }, [mapReady, target, municipality, ward]);
 
-  function changeMetric(nextMetric: Metric) {
-    setMetric(nextMetric);
-    if (nextMetric === "registration") setMapYear(REGISTRATION_MAP_YEAR);
+  function selectProvince(name: string) {
+    setMunicipality("");
+    setWard("");
+    setSvgZoom(1);
+    onProvinceChange(name || "All provinces");
+  }
+  function selectMunicipality(code: string) {
+    setMunicipality(code);
+    setWard("");
+    setSvgZoom(1);
+  }
+  function selectWard(id: string, code: string) {
+    setMunicipality(code);
+    setWard(id);
+    setSvgZoom(1);
+  }
+  function resetMap() {
+    selectProvince("");
+  }
+  function fitSelection() {
+    setSvgZoom(1);
+    if (mapRef.current && mapReady && target)
+      fitGeometry(mapRef.current, target, !!(municipality || ward));
+  }
+  function goBack() {
+    if (ward) setWard("");
+    else if (municipality) selectMunicipality("");
+    else resetMap();
+  }
+  function zoomMap(direction: 1 | -1) {
+    if (useSvg)
+      setSvgZoom((zoom) => Math.min(6, Math.max(1, zoom + direction * 0.5)));
+    else if (mapRef.current)
+      direction === 1
+        ? mapRef.current.zoomIn({ duration: duration() })
+        : mapRef.current.zoomOut({ duration: duration() });
+  }
+  function changeMetric(next: Metric) {
+    setMetric(next);
+    if (next === "registration") setMapYear(REGISTRATION_MAP_YEAR);
     else if (
-      (nextMetric === "turnout" || nextMetric === "nonparticipation") &&
+      (next === "turnout" || next === "nonparticipation") &&
       mapYear === REGISTRATION_MAP_YEAR
     )
       setMapYear(2016);
     else if (mapYear === REGISTRATION_MAP_YEAR) setMapYear(year);
-  }
-
-  function resetMap() {
-    onProvinceChange("All provinces");
-    if (mapRef.current && data && mapReady)
-      fitProvince(mapRef.current, data, "");
   }
 
   return (
@@ -515,25 +688,27 @@ export default function ElectoralMap({
         <div>
           <p className="eyebrow">GEOGRAPHIC EXPLORER</p>
           <h2 id="electoral-map-title">The electoral landscape</h2>
-          <p className="muted">Explore South Africa, province by province.</p>
+          <p className="muted">
+            From your province to your municipality and ward.
+          </p>
         </div>
         <span className="map-scope-badge">
-          <Layers3 size={13} /> Province boundaries
+          <Layers3 size={14} /> Provinces · municipalities · wards
         </span>
       </div>
-
       <div className="map-filter-bar">
         <label className="map-field">
           Map dataset
           <select
             className="select"
+            aria-label="Map dataset"
             value={mapYear}
             onChange={(event) => setMapYear(Number(event.target.value))}
           >
             <option value={REGISTRATION_MAP_YEAR}>
               2026 registration snapshot
             </option>
-            {YEARS.map((item) => (
+            {municipalYears.map((item) => (
               <option key={item} value={item}>
                 {item} municipal election
               </option>
@@ -544,6 +719,7 @@ export default function ElectoralMap({
           Map measure
           <select
             className="select"
+            aria-label="Map measure"
             value={metric}
             onChange={(event) => changeMetric(event.target.value as Metric)}
           >
@@ -558,135 +734,335 @@ export default function ElectoralMap({
           Province
           <select
             className="select"
+            aria-label="Province"
             value={selectedProvince}
-            onChange={(event) =>
-              onProvinceChange(event.target.value || "All provinces")
-            }
+            onChange={(event) => selectProvince(event.target.value)}
           >
             <option value="">All provinces</option>
-            {PROVINCES.map((name) => (
+            {provinces.map((name) => (
               <option key={name} value={name}>
                 {name}
               </option>
             ))}
           </select>
         </label>
-        <button className="button map-reset-button" onClick={resetMap}>
+        <button
+          type="button"
+          className="button map-reset-button"
+          onClick={resetMap}
+        >
           <RotateCcw size={14} /> Reset view
         </button>
       </div>
-
+      {selectedProvince && (
+        <div className="map-drilldown-fields">
+          <label className="map-field">
+            Municipality
+            <select
+              className="select"
+              aria-label="Municipality"
+              value={selectedMunicipality ? municipality : ""}
+              disabled={wardStatus !== "ready"}
+              onChange={(event) => selectMunicipality(event.target.value)}
+            >
+              <option value="">
+                All mapped municipalities in {selectedProvince}
+              </option>
+              {municipalityOptions.map((feature) => (
+                <option
+                  key={feature.properties.code}
+                  value={feature.properties.code}
+                >
+                  {feature.properties.name} ({feature.properties.code})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="map-field">
+            Ward
+            <select
+              className="select"
+              aria-label="Ward"
+              value={selectedWard ? ward : ""}
+              disabled={!municipality || wardStatus !== "ready"}
+              onChange={(event) => selectWard(event.target.value, municipality)}
+            >
+              <option value="">
+                {municipality
+                  ? "All mapped wards in this municipality"
+                  : "Choose a municipality first"}
+              </option>
+              {wardOptions.map((feature) => (
+                <option
+                  key={feature.properties.wardId}
+                  value={feature.properties.wardId}
+                >
+                  Ward {feature.properties.wardNumber} ·{" "}
+                  {feature.properties.wardId}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
       <div
         className={`map-dataset-status ${hasMappedValues ? "verified" : "unavailable"}`}
         aria-live="polite"
       >
-        {hasRegistration ? (
+        <span className="map-status-dot" />
+        {hasRegistration
+          ? `Province statistics: IEC registration snapshot · ${formattedSnapshotDate}`
+          : hasHistoricalMeasure
+            ? "Province statistics: IEC 2016 municipal election data"
+            : `Verified ${mapYear} provincial ${METRICS[metric].toLowerCase()} is not mapped.`}
+        <span className="map-global-year">Global election: {year}</span>
+      </div>
+      {selectedProvince && (
+        <p className="map-snapshot-qualification">
+          Boundary snapshot · 2026-labelled ·{" "}
+          {WARD_BOUNDARY_INFO.wardCount.toLocaleString("en-ZA")} mapped wards.
+          Three Merafong City ward numbers are absent from this source; this is
+          not a certified IEC ward register.
+        </p>
+      )}
+      <nav className="map-breadcrumbs" aria-label="Map location">
+        <button
+          type="button"
+          onClick={resetMap}
+          aria-current={!selectedProvince ? "location" : undefined}
+        >
+          South Africa
+        </button>
+        {selectedProvince && (
           <>
-            <span className="map-status-dot" /> Verified IEC registration
-            snapshot · {formattedSnapshotDate}{" "}
-            <span className="map-global-year">Global election: {year}</span>
+            <ChevronRight size={14} aria-hidden="true" />
+            <button
+              type="button"
+              onClick={() => selectMunicipality("")}
+              aria-current={!municipality ? "location" : undefined}
+            >
+              {selectedProvince}
+            </button>
           </>
-        ) : hasHistoricalMeasure ? (
+        )}
+        {selectedMunicipality && (
           <>
-            <span className="map-status-dot" /> Verified IEC 2016 municipal
-            election data{" "}
-            <span className="map-global-year">
-              {metric === "nonparticipation"
-                ? "7 provinces · 2 missing roll denominators"
-                : "9 provinces"}
-            </span>
+            <ChevronRight size={14} aria-hidden="true" />
+            <button
+              type="button"
+              onClick={() => setWard("")}
+              aria-current={!ward ? "location" : undefined}
+            >
+              {selectedMunicipality.properties.name}
+            </button>
           </>
-        ) : (
+        )}
+        {selectedWard && (
           <>
-            <span className="map-status-dot" />{" "}
-            {mapYear === REGISTRATION_MAP_YEAR
-              ? "This snapshot provides registration counts only."
-              : `Verified ${mapYear} provincial ${METRICS[metric].toLowerCase()} is not mapped.`}{" "}
-            <span className="map-global-year">
-              Historical values are not substituted.
+            <ChevronRight size={14} aria-hidden="true" />
+            <span aria-current="location">
+              Ward {selectedWard.properties.wardNumber}
             </span>
           </>
         )}
-      </div>
-
-      <div className="electoral-map-stage">
+        {selectedProvince && (
+          <button type="button" className="map-back-button" onClick={goBack}>
+            <ArrowLeft size={14} /> Back one level
+          </button>
+        )}
+      </nav>
+      <div
+        className="electoral-map-stage"
+        aria-busy={!useSvg && !boundaryError && !mapDrawn}
+      >
         <div
           ref={mapContainer}
           className={`electoral-map-canvas ${useSvg ? "map-canvas-hidden" : ""}`}
-          aria-label="Interactive South African province map"
+          aria-label="Interactive South African province, municipality and ward map"
         />
-        {useSvg && data && (
-          <SvgOverview
-            data={data}
+        {useSvg && data && target && (
+          <MapSvg
+            provinces={data}
+            municipalities={provinceMunicipalities}
+            wards={visibleWards}
             province={selectedProvince}
+            municipality={municipality}
+            ward={ward}
+            target={target}
             mapYear={mapYear}
             metric={metric}
-            onSelect={onProvinceChange}
+            zoom={svgZoom}
+            onProvince={selectProvince}
+            onMunicipality={selectMunicipality}
+            onWard={selectWard}
           />
         )}
-        {!mapReady && !useSvg && !boundaryError && (
+        {!mapDrawn && !useSvg && !boundaryError && (
           <div className="map-loading" role="status">
-            <span className="map-loading-dot" /> Loading province geography…
+            <span className="map-loading-dot" /> Loading geography…
           </div>
         )}
         {boundaryError && (
           <div className="map-loading empty-state" role="alert">
-            Province boundaries could not be loaded. Select a province above to
-            view its data status.
+            Province boundaries could not be loaded.
           </div>
         )}
-
         <div className="map-compass" aria-hidden="true">
           <span>N</span>
           <svg viewBox="0 0 20 32">
-            <path d="M10 0 18 29 10 22 2 29Z" fill="#b7b9cc" />
-            <path d="M10 0 10 22 2 29Z" fill="#515b74" />
+            <path d="M10 0 18 29 10 22 2 29Z" fill="#b7cbe4" />
+            <path d="M10 0 10 22 2 29Z" fill="#536c87" />
           </svg>
         </div>
-        {!useSvg && (
-          <div className="map-zoom-controls" aria-label="Map zoom controls">
-            <button
-              aria-label="Zoom in"
-              title="Zoom in"
-              onClick={() => mapRef.current?.zoomIn()}
-            >
-              <Plus size={16} />
-            </button>
-            <button
-              aria-label="Zoom out"
-              title="Zoom out"
-              onClick={() => mapRef.current?.zoomOut()}
-            >
-              <Minus size={16} />
-            </button>
-            <button
-              aria-label="Fit all provinces"
-              title="Fit all provinces"
-              onClick={resetMap}
-            >
-              <Expand size={15} />
-            </button>
-          </div>
-        )}
-
-        <div className="map-location-pill">
-          <MapPin size={12} /> SOUTH AFRICA{" "}
-          <span>{selectedProvince || "9 PROVINCES"}</span>
+        <div className="map-zoom-controls" aria-label="Map zoom controls">
+          <button
+            type="button"
+            aria-label="Zoom in"
+            title="Zoom in"
+            disabled={
+              boundaryError ||
+              (!mapReady && !useSvg) ||
+              (useSvg && svgZoom >= 6)
+            }
+            onClick={() => zoomMap(1)}
+          >
+            <Plus size={18} />
+          </button>
+          <button
+            type="button"
+            aria-label="Zoom out"
+            title="Zoom out"
+            disabled={
+              boundaryError ||
+              (!mapReady && !useSvg) ||
+              (useSvg && svgZoom <= 1)
+            }
+            onClick={() => zoomMap(-1)}
+          >
+            <Minus size={18} />
+          </button>
+          <button
+            type="button"
+            aria-label="Fit selected geography"
+            title="Fit selected geography"
+            disabled={!target}
+            onClick={fitSelection}
+          >
+            <Expand size={18} />
+          </button>
         </div>
-        {hoveredProvince && !selectedProvince && (
-          <div className="map-hover-card" role="status">
-            <strong>{hoveredProvince}</strong>
+      </div>
+      <div className="map-interaction-note" aria-live="polite">
+        {boundaryError ? (
+          <>
+            <span>Try loading the boundary files again.</span>
+            <button
+              type="button"
+              className="button"
+              onClick={() => setProvinceReload((value) => value + 1)}
+            >
+              Retry boundaries
+            </button>
+          </>
+        ) : !selectedProvince ? (
+          <span>
+            {hoveredProvince
+              ? `${hoveredProvince}${hoveredObservation ? ` · ${formatObservation(hoveredObservation)} ${hoveredObservation.label.toLowerCase()}` : ""}. `
+              : ""}
+            Select a province to zoom into its municipalities and wards.
+          </span>
+        ) : wardStatus === "loading" ? (
+          <span role="status">Loading {selectedProvince} ward boundaries…</span>
+        ) : wardStatus === "error" ? (
+          <>
             <span>
-              {hoveredObservation
-                ? `${formatObservation(hoveredObservation)} ${hoveredObservation.label.toLowerCase()} · ${hoveredObservation.observedAt}`
-                : "Click to explore · results unavailable"}
+              Ward boundaries could not be loaded. Your province statistics are
+              still available below.
             </span>
-          </div>
+            <button
+              type="button"
+              className="button"
+              onClick={() => setWardReload((value) => value + 1)}
+            >
+              Retry ward boundaries
+            </button>
+          </>
+        ) : (
+          <span>
+            {selectedWard
+              ? `Ward ${selectedWard.properties.wardNumber} · ${selectedWard.properties.municipalityName} · ID ${selectedWard.properties.wardId}`
+              : municipality
+                ? `${wardOptions.length} wards. Select a ward on the map or use the ward selector.`
+                : `${municipalityOptions.length} municipalities · ${provinceWards?.features.length.toLocaleString("en-ZA") ?? "—"} wards. Select a municipality to explore its wards.`}{" "}
+            {useSvg
+              ? "Use the zoom buttons; drag the zoomed map to pan."
+              : "Drag to pan; pinch or use the buttons to zoom."}
+          </span>
         )}
-        {selectedProvince && (
+      </div>
+      {selectedProvince && (
+        <div className="map-details-grid">
+          <aside className="map-geography-card">
+            <p className="eyebrow">
+              {selectedWard
+                ? "SELECTED WARD"
+                : selectedMunicipality
+                  ? "SELECTED MUNICIPALITY"
+                  : "SELECTED PROVINCE"}
+            </p>
+            <h3>
+              {selectedWard
+                ? `Ward ${selectedWard.properties.wardNumber}`
+                : (selectedMunicipality?.properties.name ?? selectedProvince)}
+            </h3>
+            <p>
+              {selectedWard
+                ? `${selectedWard.properties.municipalityName} · ${selectedProvince}`
+                : selectedMunicipality
+                  ? `${selectedProvince} · ${selectedMunicipality.properties.code}`
+                  : "Choose a municipality, then a ward, to explore local boundaries."}
+            </p>
+            {selectedWard && (
+              <p>
+                <strong>Ward identifier:</strong>{" "}
+                {selectedWard.properties.wardId}
+              </p>
+            )}
+            <p>
+              <strong>Boundary snapshot:</strong>{" "}
+              {WARD_BOUNDARY_INFO.vintageLabel}
+            </p>
+            <p className="map-boundary-caveat">
+              Ward boundaries show geography. Verified ward election statistics
+              are not yet included.
+            </p>
+            {missingWardNumbers && (
+              <p className="map-coverage-warning">
+                Coverage gap: this source has no geometry for{" "}
+                {missingWardNumbers.municipalityName} ward numbers{" "}
+                {missingWardNumbers.unrepresentedNumbersWithinRange.join(", ")}.
+                This source gap has not been reconciled with the primary
+                boundary set.
+              </p>
+            )}
+            <a
+              href="https://registertovote.elections.org.za/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Check your registration with the IEC ↗
+            </a>
+            <a
+              href={WARD_BOUNDARY_INFO.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              View attributed boundary files ↗
+            </a>
+          </aside>
           <aside className="map-selection-card" aria-live="polite">
             <span className="eyebrow">
-              SELECTED PROVINCE ·{" "}
+              PROVINCE CONTEXT ·{" "}
               {selectedObservation?.kind === "snapshot"
                 ? "REGISTRATION SNAPSHOT"
                 : mapYear}
@@ -722,55 +1098,47 @@ export default function ElectoralMap({
                 ? `${selectedObservation.kind === "snapshot" ? `Observed ${formattedSnapshotDate}.` : "2016 municipal election."} ${selectedObservation.note}`
                 : hasHistoricalMeasure && metric === "nonparticipation"
                   ? "Unavailable: conflicting roll counts in the 2016 report prevent a compatible non-participation calculation for this province."
-                  : "Verified provincial results are not mapped for this measure and reference year."}{" "}
-              Municipality and ward boundaries are unavailable.
+                  : "Verified provincial results are not mapped for this measure and reference year."}
             </p>
           </aside>
-        )}
-        <div className="map-ocean-label" aria-hidden="true">
-          SOUTH ATLANTIC OCEAN
-        </div>
-      </div>
-
-      {hasMappedValues ? (
-        <div className="registration-map-legend">
-          <span className="registration-legend-title">
-            {METRICS[metric].toUpperCase()} · EXACT{" "}
-            {metric === "turnout" ? "PERCENTAGE" : "COUNT"} INTERVALS
-          </span>
-          <div>
-            {intervals.map((interval) => (
-              <span key={interval.min}>
-                <i style={{ backgroundColor: interval.color }} />
-                {interval.label}
-              </span>
-            ))}
-            {metric === "nonparticipation" && (
-              <span>
-                <i style={{ backgroundColor: "#34384c" }} />
-                Unavailable
-              </span>
-            )}
-          </div>
-          <p>
-            Values are also available through the province selector. A bright
-            outline marks the selected province.
-          </p>
-        </div>
-      ) : (
-        <div className="map-legend">
-          <div>
-            <span className="map-legend-swatch" /> Provincial data unavailable{" "}
-            <span className="map-legend-selected" /> Selected province
-          </div>
-          <span>
-            {mapYear} · {METRICS[metric]}
-          </span>
         </div>
       )}
+      {!selectedProvince &&
+        (hasMappedValues ? (
+          <div className="registration-map-legend">
+            <span className="registration-legend-title">
+              {METRICS[metric].toUpperCase()} · EXACT{" "}
+              {metric === "turnout" ? "PERCENTAGE" : "COUNT"} INTERVALS
+            </span>
+            <div>
+              {intervals.map((interval) => (
+                <span key={interval.min}>
+                  <i style={{ backgroundColor: interval.color }} />
+                  {interval.label}
+                </span>
+              ))}
+              {metric === "nonparticipation" && (
+                <span>
+                  <i style={{ backgroundColor: "#34384c" }} />
+                  Unavailable
+                </span>
+              )}
+            </div>
+            <p>
+              Province colours show the selected statistical measure.
+              Municipality and ward views show boundaries only.
+            </p>
+          </div>
+        ) : (
+          <div className="map-legend">
+            <span>
+              Provincial data unavailable · {mapYear} · {METRICS[metric]}
+            </span>
+          </div>
+        ))}
       <div className="map-source-note">
         <p>
-          <strong>Administrative geography.</strong>{" "}
+          <strong>Province overview:</strong>{" "}
           <a
             href="https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-1-states-provinces/"
             target="_blank"
@@ -778,11 +1146,35 @@ export default function ElectoralMap({
           >
             Natural Earth
           </a>{" "}
-          v5.1.2, released 2022; boundary reference year unspecified. These are
-          generalised province boundaries, not official IEC election boundaries.{" "}
+          v5.1.2 (2022), generalised province boundaries; reference year
+          unspecified.{" "}
           {hasHistoricalMeasure
-            ? "The 2016 data uses election-year administrative provinces; this later geography is an overview and cannot establish historical boundary equivalence."
+            ? "This later overview cannot establish historical boundary equivalence for 2016."
             : "No historical election geography is implied."}
+        </p>
+        <p>
+          <strong>Municipalities and wards:</strong>{" "}
+          <a
+            href={WARD_BOUNDARY_INFO.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            SA-Maps mirror, attributed to the Municipal Demarcation Board
+          </a>{" "}
+          · {WARD_BOUNDARY_INFO.vintageLabel} ·{" "}
+          {WARD_BOUNDARY_INFO.wardCount.toLocaleString("en-ZA")} mapped wards.
+          This boundary vintage is separate from the statistical dataset
+          selected above. No province totals are assigned to wards.
+        </p>
+        <p>
+          {WARD_BOUNDARY_INFO.verificationNote}{" "}
+          <a
+            href={publicPath("/data/wards.metadata.json")}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Ward source details
+          </a>
         </p>
         <p>
           {hasRegistration ? (
@@ -796,8 +1188,7 @@ export default function ElectoralMap({
                 IEC voter registration statistics
               </a>
               , observed {formattedSnapshotDate}. Current counts are not
-              historical election rolls; no eligible-population rates or voting
-              behaviour are inferred.
+              historical election rolls.
             </>
           ) : hasHistoricalMeasure ? (
             <>
@@ -807,14 +1198,14 @@ export default function ElectoralMap({
               </a>
               . Published turnout is retained; certified rolls differ from
               effective rolls including MEC7 additions. Non-participation is
-              unavailable for Eastern Cape and Limpopo because the report&apos;s
-              roll counts conflict.
+              unavailable for Eastern Cape and Limpopo because report roll
+              counts conflict.
             </>
           ) : (
-            "Map shading indicates selection only. Electoral values are unavailable for this map measure and reference year."
+            "Electoral values are unavailable for this measure and reference year."
           )}{" "}
           {useSvg &&
-            "Your browser is using the accessible map overview because WebGL is unavailable."}{" "}
+            "Your browser is using the accessible SVG map because the interactive renderer is unavailable."}{" "}
           <a
             href={publicPath("/data/boundaries.metadata.json")}
             target="_blank"

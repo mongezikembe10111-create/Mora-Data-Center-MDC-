@@ -1,0 +1,251 @@
+{
+  "sourceUrl": "https://github.com/j-norwood-young/SA-Maps/tree/e79972d7d65283877df3101a24270f5e1415d579",
+  "sourceName": "SA-Maps mirror \u00b7 attributed to the Municipal Demarcation Board",
+  "primarySourceUrl": "https://www.demarcation.org.za/",
+  "vintageLabel": "2026-labelled municipal and ward boundaries",
+  "vintage": 2026,
+  "downloadedAt": "2026-10-13",
+  "wardCount": 4485,
+  "municipalityCount": 213,
+  "verificationNote": "The source files are labelled 2026 and attributed to the Municipal Demarcation Board by the SA-Maps publisher. We verified their hashes, valid geometries, 4,485 distinct ward identifiers and relationships to 213 municipalities across all nine provinces. An IEC announcement on 27 May 2026 reports 4,488 wards and 214 municipalities; that difference has not been reconciled. The MDB primary files and IEC adoption have not been independently matched. This browsable mirror snapshot is not claimed as the complete certified 2026 electoral boundary set or proof of your voting ward.",
+  "sourceCommit": "e79972d7d65283877df3101a24270f5e1415d579",
+  "sourceCommitDate": "2026-09-09T12:28:25Z",
+  "wardSourceCommit": "d975f078b6c5bbd14bffb730db9e806e99ed6356",
+  "municipalitySourceCommit": "c011264b75e631ea503a5e8a16a10a3cfb917793",
+  "sourcefiles": [
+    {
+      "file": "Local_Municipalities_2026.dbf",
+      "url": "https://raw.githubusercontent.com/j-norwood-young/SA-Maps/e79972d7d65283877df3101a24270f5e1415d579/Local%20Municipalities/2026/Local_Municipalities_2026.dbf",
+      "bytes": 53657,
+      "sha256": "f2bd311fd16a6a28da3922eba28b12daec0cc749f9944911001cf4a74c10c65b"
+    },
+    {
+      "file": "Local_Municipalities_2026.prj",
+      "url": "https://raw.githubusercontent.com/j-norwood-young/SA-Maps/e79972d7d65283877df3101a24270f5e1415d579/Local%20Municipalities/2026/Local_Municipalities_2026.prj",
+      "bytes": 145,
+      "sha256": "a02a27b1d1982c8516d83398e85a3c8b1aef1713c13ef4d84d7bde17430c07c4"
+    },
+    {
+      "file": "Local_Municipalities_2026.shp",
+      "url": "https://raw.githubusercontent.com/j-norwood-young/SA-Maps/e79972d7d65283877df3101a24270f5e1415d579/Local%20Municipalities/2026/Local_Municipalities_2026.shp",
+      "bytes": 18597732,
+      "sha256": "467a5d5857e6d05ba9c46d89ce563264ab410defd9aa88cff313d3265622a45d"
+    },
+    {
+      "file": "Local_Municipalities_2026.shx",
+      "url": "https://raw.githubusercontent.com/j-norwood-young/SA-Maps/e79972d7d65283877df3101a24270f5e1415d579/Local%20Municipalities/2026/Local_Municipalities_2026.shx",
+      "bytes": 1804,
+      "sha256": "38d49d548ab26e6ad896a55ad711224b6d94d4228a98f1a95332b5d298fc8cec"
+    },
+    {
+      "file": "Wards_2026.dbf",
+      "url": "https://raw.githubusercontent.com/j-norwood-young/SA-Maps/e79972d7d65283877df3101a24270f5e1415d579/Wards/2026/Wards_2026.dbf",
+      "bytes": 1215629,
+      "sha256": "4e992bd63d515d3748d24b82cb3d0f5048e5352efafb6c76df7d92e6fdb74fe5"
+    },
+    {
+      "file": "Wards_2026.prj",
+      "url": "https://raw.githubusercontent.com/j-norwood-young/SA-Maps/e79972d7d65283877df3101a24270f5e1415d579/Wards/2026/Wards_2026.prj",
+      "bytes": 145,
+      "sha256": "a02a27b1d1982c8516d83398e85a3c8b1aef1713c13ef4d84d7bde17430c07c4"
+    },
+    {
+      "file": "Wards_2026.shp",
+      "url": "https://raw.githubusercontent.com/j-norwood-young/SA-Maps/e79972d7d65283877df3101a24270f5e1415d579/Wards/2026/Wards_2026.shp",
+      "bytes": 58319916,
+      "sha256": "a07a6f5753606eff96b7f586294e762557e4e07489f6c1e01eb135881d945d94"
+    },
+    {
+      "file": "Wards_2026.shx",
+      "url": "https://raw.githubusercontent.com/j-norwood-young/SA-Maps/e79972d7d65283877df3101a24270f5e1415d579/Wards/2026/Wards_2026.shx",
+      "bytes": 35980,
+      "sha256": "bd7e720986872617add720d3d8a0ee0c0c2f13a39c1a7007d1eb7219c8ce1329"
+    }
+  ],
+  "provinceCounts": {
+    "Eastern Cape": 703,
+    "Free State": 308,
+    "Gauteng": 526,
+    "KwaZulu-Natal": 921,
+    "Limpopo": 568,
+    "Mpumalanga": 408,
+    "North West": 402,
+    "Northern Cape": 233,
+    "Western Cape": 416
+  },
+  "transformation": {
+    "projection": "WGS 84 (EPSG:4326), unchanged from source",
+    "simplificationToleranceDegrees": 0.0001,
+    "coordinateDecimalPlaces": 6,
+    "purpose": "Simplified display boundaries; not for cadastral or voting-station decisions.",
+    "properties": "Identifiers and ward numbers retained exactly; municipality names taken from source after the code prefix.",
+    "sharedBoundaryCoverageValid": {
+      "ward": false,
+      "municipal": false
+    },
+    "method": "Shared-edge topology-preserving coverage simplification where the source is a valid coverage, otherwise per-feature topology-preserving simplification; final valid geometries snapped to six decimal places."
+  },
+  "licenceNote": "The mirror README credits the Municipal Demarcation Board. No separate data licence is specified in the repository; preserve source credit and consult the original publisher for redistribution terms.",
+  "officialCrossCheck": {
+    "url": "https://www.gov.za/news/media-statements/electoral-commission-launches-2026-local-government-elections-campaign-27-may",
+    "title": "Electoral Commission launches 2026 Local Government Elections campaign",
+    "publicationDate": "2026-05-27",
+    "retrievedAt": "2026-10-13",
+    "status": 200,
+    "sha256": "c36d85ebff76ab149913b80dc3f5e902f49d280679d1848e0820dbc3261bd10e",
+    "reportedWardCount": 4488,
+    "reportedMunicipalityCount": 214,
+    "excerpt": "Just under 24 000 registration stations across 4 488 municipal wards will open over the two days to enable citizens to register, verify their personal details, and ensure correct registration. Preparations are ",
+    "finding": "The official announced counts differ from the mirrored shapefile counts. No primary file was available to resolve the difference."
+  },
+  "sourceAnomalies": [
+    {
+      "municipalityCode": "GT484",
+      "municipalityName": "Merafong City",
+      "observedWardCount": 25,
+      "observedWardNumberMinimum": 1,
+      "observedWardNumberMaximum": 28,
+      "unrepresentedNumbersWithinRange": [
+        8,
+        19,
+        27
+      ],
+      "note": "These ward numbers do not appear in the mirrored dataset. This does not establish whether they are missing from the mirror or intentionally absent in the primary boundary set. No replacement geometries or inferred ward records have been added."
+    }
+  ],
+  "derivedFiles": [
+    {
+      "file": "municipal-boundaries.geojson",
+      "bytes": 4916840,
+      "estimatedGzipBytes": 1366384,
+      "sha256": "da12934bc15bf396e63c7977c53b90c3609921991d8502db64240fe97a9858c0"
+    },
+    {
+      "file": "wards/EC.geojson",
+      "bytes": 5810434,
+      "estimatedGzipBytes": 1506557,
+      "sha256": "d1181019c50ee0ac458f84e97b1c7b389e4934f2f1bdf7e000b529695b194399"
+    },
+    {
+      "file": "wards/FS.geojson",
+      "bytes": 1280991,
+      "estimatedGzipBytes": 334656,
+      "sha256": "3423e74ebd53e02769584f6cde80f1f2d585fcdcfbdc559ab1395b77784b0822"
+    },
+    {
+      "file": "wards/GT.geojson",
+      "bytes": 732001,
+      "estimatedGzipBytes": 169028,
+      "sha256": "674f8878c3dc2f7f854db74a87c31485f2580aaa0e7dbaa225e44518c35c482a"
+    },
+    {
+      "file": "wards/KZN.geojson",
+      "bytes": 5189567,
+      "estimatedGzipBytes": 1306470,
+      "sha256": "e5927e1c68df70adb7667fa57299ead28e364935bc72483ee23b97d4915e74d3"
+    },
+    {
+      "file": "wards/LIM.geojson",
+      "bytes": 2510145,
+      "estimatedGzipBytes": 615807,
+      "sha256": "15ae2cf89292aff8b2c7d00c460704b006bba0ac7c60d8be2d4caef0b3309857"
+    },
+    {
+      "file": "wards/MP.geojson",
+      "bytes": 1194871,
+      "estimatedGzipBytes": 297663,
+      "sha256": "58a35bf7880222c52caa11fda4a412a9854877947da753f59453fd4466d28df0"
+    },
+    {
+      "file": "wards/NC.geojson",
+      "bytes": 920875,
+      "estimatedGzipBytes": 240591,
+      "sha256": "12733a730a03781ca7e2e08b31dba2addb73a1d36ac28a47eb468d0145b2148b"
+    },
+    {
+      "file": "wards/NW.geojson",
+      "bytes": 1188112,
+      "estimatedGzipBytes": 296758,
+      "sha256": "54eceff48658ddc1ef012ca32f673e70cc9a94bfa1cfa9a1442bcacaa13487d1"
+    },
+    {
+      "file": "wards/WC.geojson",
+      "bytes": 1516448,
+      "estimatedGzipBytes": 383781,
+      "sha256": "6de9b4c7a06e58420210a7bcdbc03da95b6ea9e724e39197fec8fd73ab391aef"
+    }
+  ],
+  "missingWardNumbers": [
+    {
+      "municipalityCode": "GT484",
+      "municipalityName": "Merafong City",
+      "wardNumbers": [
+        8,
+        19,
+        27
+      ]
+    }
+  ],
+  "displayFiles": [
+    {
+      "path": "/data/municipal-boundaries.geojson",
+      "sha256": "da12934bc15bf396e63c7977c53b90c3609921991d8502db64240fe97a9858c0",
+      "bytes": 4916840,
+      "features": 213
+    },
+    {
+      "path": "/data/wards/EC.geojson",
+      "sha256": "d1181019c50ee0ac458f84e97b1c7b389e4934f2f1bdf7e000b529695b194399",
+      "bytes": 5810434,
+      "features": 703
+    },
+    {
+      "path": "/data/wards/FS.geojson",
+      "sha256": "3423e74ebd53e02769584f6cde80f1f2d585fcdcfbdc559ab1395b77784b0822",
+      "bytes": 1280991,
+      "features": 308
+    },
+    {
+      "path": "/data/wards/GT.geojson",
+      "sha256": "674f8878c3dc2f7f854db74a87c31485f2580aaa0e7dbaa225e44518c35c482a",
+      "bytes": 732001,
+      "features": 526
+    },
+    {
+      "path": "/data/wards/KZN.geojson",
+      "sha256": "e5927e1c68df70adb7667fa57299ead28e364935bc72483ee23b97d4915e74d3",
+      "bytes": 5189567,
+      "features": 921
+    },
+    {
+      "path": "/data/wards/LIM.geojson",
+      "sha256": "15ae2cf89292aff8b2c7d00c460704b006bba0ac7c60d8be2d4caef0b3309857",
+      "bytes": 2510145,
+      "features": 568
+    },
+    {
+      "path": "/data/wards/MP.geojson",
+      "sha256": "58a35bf7880222c52caa11fda4a412a9854877947da753f59453fd4466d28df0",
+      "bytes": 1194871,
+      "features": 408
+    },
+    {
+      "path": "/data/wards/NC.geojson",
+      "sha256": "12733a730a03781ca7e2e08b31dba2addb73a1d36ac28a47eb468d0145b2148b",
+      "bytes": 920875,
+      "features": 233
+    },
+    {
+      "path": "/data/wards/NW.geojson",
+      "sha256": "54eceff48658ddc1ef012ca32f673e70cc9a94bfa1cfa9a1442bcacaa13487d1",
+      "bytes": 1188112,
+      "features": 402
+    },
+    {
+      "path": "/data/wards/WC.geojson",
+      "sha256": "6de9b4c7a06e58420210a7bcdbc03da95b6ea9e724e39197fec8fd73ab391aef",
+      "bytes": 1516448,
+      "features": 416
+    }
+  ]
+}

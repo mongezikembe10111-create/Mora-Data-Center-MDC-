@@ -1,12 +1,21 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 /** Small progressive enhancements; content remains visible without JavaScript. */
 export default function SiteExperience() {
+  const [reducedMotion, setReducedMotion] = useState(false);
+
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (media.matches) return;
+    const update = () => setReducedMotion(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    if (reducedMotion) return;
     const sections = document.querySelectorAll<HTMLElement>(".square-section");
     const observer = new IntersectionObserver(
       (entries) => {
@@ -64,11 +73,12 @@ export default function SiteExperience() {
       window.removeEventListener("scroll", updateProgress);
       hero?.removeEventListener("pointermove", move);
       hero?.removeEventListener("pointerleave", reset);
+      reset();
       sections.forEach((section) =>
         section.classList.remove("square-motion-ready", "square-in-view"),
       );
       document.documentElement.style.removeProperty("--square-scroll-progress");
     };
-  }, []);
+  }, [reducedMotion]);
   return <div className="square-scroll-progress" aria-hidden="true" />;
 }

@@ -146,6 +146,7 @@ export default function DataExplorer({
   ]);
   const [view, setView] = useState<"chart" | "table">("chart");
   const [feedback, setFeedback] = useState("");
+  const [manualPermalink, setManualPermalink] = useState("");
   const allYears = useMemo(
     () =>
       Array.from(
@@ -210,6 +211,7 @@ export default function DataExplorer({
 
   useEffect(() => {
     if (!restored) return;
+    setManualPermalink("");
     const url = new URL(window.location.href);
     for (const [key, value] of Object.entries(filters)) {
       if (value === "all" || !value) url.searchParams.delete(key);
@@ -869,9 +871,11 @@ export default function DataExplorer({
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(window.location.href);
+      setManualPermalink("");
       setFeedback("Chart permalink copied.");
     } catch {
-      setFeedback(`Chart permalink: ${window.location.href}`);
+      setManualPermalink(window.location.href);
+      setFeedback("Select and copy the chart permalink below.");
     }
   }
 
@@ -1387,6 +1391,18 @@ export default function DataExplorer({
         >
           {feedback}
         </p>
+        {manualPermalink && (
+          <label className="field">
+            Chart permalink
+            <input
+              type="text"
+              readOnly
+              autoFocus
+              value={manualPermalink}
+              onFocus={(event) => event.currentTarget.select()}
+            />
+          </label>
+        )}
       </section>
     </div>
   );

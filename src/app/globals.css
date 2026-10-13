@@ -490,6 +490,8 @@ select option {
 .field {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
   gap: 7px;
   color: var(--muted);
   font-size: 11px;
@@ -1118,6 +1120,14 @@ select option {
 .toolbar label {
   font-size: 11px;
   color: var(--muted);
+  min-width: 0;
+  max-width: 100%;
+}
+.toolbar select {
+  max-width: 100%;
+}
+.chart-source {
+  overflow-wrap: anywhere;
 }
 .toolbar input,
 input[type="search"],
@@ -1493,10 +1503,13 @@ textarea {
 .search-dialog {
   position: fixed;
   z-index: 81;
-  top: 15vh;
+  top: clamp(16px, 10dvh, 100px);
   left: 50%;
   transform: translateX(-50%);
   width: min(580px, calc(100% - 32px));
+  max-height: calc(100dvh - clamp(16px, 10dvh, 100px) - 16px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: var(--surface);
   border: 1px solid #49658a;
   border-radius: 18px;
@@ -1849,9 +1862,12 @@ textarea {
   }
   .history-strip {
     gap: 7px;
+    grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
   }
   .history-strip button {
     padding-left: 8px;
+    min-width: 0;
+    min-height: 62px;
   }
   .history-strip button strong {
     font-size: 15px;

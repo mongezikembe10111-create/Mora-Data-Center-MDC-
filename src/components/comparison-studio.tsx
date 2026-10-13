@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { EChartsOption } from "echarts";
 import {
   ageGroups,
@@ -108,6 +108,8 @@ export default function ComparisonStudio() {
   const [restored, setRestored] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [shareUrl, setShareUrl] = useState("");
+  const shareDetails = useRef<HTMLDetailsElement>(null);
+  const shareInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -447,6 +449,9 @@ export default function ComparisonStudio() {
       );
     } catch {
       setFeedback("Select and copy the comparison link below.");
+      if (shareDetails.current) shareDetails.current.open = true;
+      shareInput.current?.focus();
+      shareInput.current?.select();
     }
   }
 
@@ -1214,7 +1219,7 @@ export default function ComparisonStudio() {
           </details>
         )}
         {shareUrl && (
-          <details>
+          <details ref={shareDetails}>
             <summary
               className="muted"
               style={{ fontSize: 12, cursor: "pointer" }}
@@ -1222,6 +1227,7 @@ export default function ComparisonStudio() {
               Shareable comparison URL
             </summary>
             <input
+              ref={shareInput}
               className="select"
               readOnly
               value={shareUrl}

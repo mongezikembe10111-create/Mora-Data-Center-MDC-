@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { sources, verificationStatus } from "@/lib/data";
 import { civicCoverage, civicNotices, civicSources } from "@/lib/civic-data";
+import { WARD_BOUNDARY_INFO } from "@/lib/ward-boundaries";
+import { publicPath } from "@/lib/public-path";
 import {
   municipalities,
   municipalitySources,
@@ -244,6 +246,59 @@ export default function MethodologyPage() {
               </p>
             </details>
           ))}
+        </div>
+      </section>
+      <section
+        className="panel"
+        aria-labelledby="boundary-sources-heading"
+        style={{ marginTop: 30 }}
+      >
+        <p className="eyebrow">Map navigation sources</p>
+        <h2 id="boundary-sources-heading">
+          Province, municipality and ward boundaries.
+        </h2>
+        <p className="muted">
+          The province overview uses Natural Earth v5.1.2. Local navigation uses
+          a {WARD_BOUNDARY_INFO.vintageLabel.toLowerCase()} snapshot from the
+          SA-Maps archive, attributed to the Municipal Demarcation Board:{" "}
+          {WARD_BOUNDARY_INFO.wardCount.toLocaleString("en-ZA")} mapped wards
+          and {WARD_BOUNDARY_INFO.municipalityCount} municipalities. Geometry
+          does not establish a ward’s turnout, registration count or historical
+          boundary equivalence.
+        </p>
+        <p className="muted">{WARD_BOUNDARY_INFO.verificationNote}</p>
+        <p className="muted">
+          Merafong City ward numbers 8, 19 and 27 are unrepresented in the
+          archive. Their shapes have not been inferred. Check your own
+          registration with the IEC.
+        </p>
+        <div
+          style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 20 }}
+        >
+          <a
+            className="button button-outline"
+            href={WARD_BOUNDARY_INFO.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Boundary archive ↗
+          </a>
+          <a
+            className="button button-outline"
+            href={publicPath("/data/wards.metadata.json")}
+            target="_blank"
+            rel="noreferrer"
+          >
+            File hashes & coverage ↗
+          </a>
+          <a
+            className="button button-outline"
+            href="https://registertovote.elections.org.za/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Check registration with the IEC ↗
+          </a>
         </div>
       </section>
       <section

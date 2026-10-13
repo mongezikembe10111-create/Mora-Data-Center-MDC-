@@ -100,10 +100,12 @@ export default function CompositionStudio() {
             breadcrumb: { show: false },
             width: "100%",
             height: "90%",
+            left: 0,
             top: 5,
             label: {
               color: "#101827",
               fontSize: 11,
+              lineHeight: 15,
               formatter: (p) =>
                 `${p.name}\n${formatNumber(Number(p.value), true)}`,
             },
@@ -120,10 +122,15 @@ export default function CompositionStudio() {
         borderColor: "#29374c",
         textStyle: { color: "#f5f7fb" },
       },
-      grid: { left: 110, right: 40, top: 28, bottom: 30 },
+      grid: {
+        left: 110,
+        right: 40,
+        top: chartType === "stacked" ? 58 : 28,
+        bottom: 30,
+      },
       legend:
         chartType === "stacked"
-          ? { textStyle: { color: "#94a3b8" }, top: 0 }
+          ? { textStyle: { color: "#94a3b8", fontSize: 10 }, top: 0 }
           : undefined,
       xAxis: {
         type: "value",
@@ -145,14 +152,14 @@ export default function CompositionStudio() {
         chartType === "stacked"
           ? [
               {
-                name: "Male · official category",
+                name: "Male (published)",
                 type: "bar",
                 stack: "registered",
                 data: rows.map((r) => r.male),
                 itemStyle: { color: "#62a7f8" },
               },
               {
-                name: "Female · official category",
+                name: "Female (published)",
                 type: "bar",
                 stack: "registered",
                 data: rows.map((r) => r.female),
@@ -195,6 +202,7 @@ export default function CompositionStudio() {
           label: {
             color: "#c5d0e0",
             fontSize: 11,
+            lineHeight: 15,
             formatter: (p) =>
               `${p.name}\n${formatNumber(Number(p.value), true)}`,
           },
@@ -335,7 +343,12 @@ export default function CompositionStudio() {
           >
             Accessible composition table
           </summary>
-          <div className="table-scroll">
+          <div
+            className="table-scroll"
+            tabIndex={0}
+            role="region"
+            aria-label="Published registration composition data"
+          >
             <table className="data-table">
               <caption className="sr-only">
                 Published registration categories and shares of the same dated
@@ -343,13 +356,13 @@ export default function CompositionStudio() {
               </caption>
               <thead>
                 <tr>
-                  <th>Original category</th>
-                  <th>Registered people</th>
-                  <th>Share of roll</th>
+                  <th scope="col">Original category</th>
+                  <th scope="col">Registered people</th>
+                  <th scope="col">Share of roll</th>
                   {breakdown === "age" && (
                     <>
-                      <th>Male (published)</th>
-                      <th>Female (published)</th>
+                      <th scope="col">Male (published)</th>
+                      <th scope="col">Female (published)</th>
                     </>
                   )}
                 </tr>
@@ -417,13 +430,22 @@ export default function CompositionStudio() {
           }
           height={300}
         />
-        <div className="table-scroll">
+        <div
+          className="table-scroll"
+          tabIndex={0}
+          role="region"
+          aria-label="Election participation flow data"
+        >
           <table className="data-table">
+            <caption className="sr-only">
+              Effective electorate and recorded participation in the selected
+              municipal election
+            </caption>
             <thead>
               <tr>
-                <th>Effective electorate</th>
-                <th>Participating voters</th>
-                <th>Did not participate</th>
+                <th scope="col">Effective electorate</th>
+                <th scope="col">Participating voters</th>
+                <th scope="col">Did not participate</th>
               </tr>
             </thead>
             <tbody>

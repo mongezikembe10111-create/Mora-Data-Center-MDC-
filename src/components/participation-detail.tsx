@@ -6,6 +6,8 @@ import {
   ArrowLeft,
   ArrowUpRight,
   CalendarPlus,
+  Check,
+  Copy,
   Download,
   FileText,
   Share2,
@@ -13,6 +15,7 @@ import {
 import { civicNotices, civicSources, type CivicNotice } from "@/lib/civic-data";
 import { formatCivicDate, noticeStatus, southAfricaDate } from "@/lib/civic";
 import { civicCalendar, type CivicCalendarKind } from "@/lib/civic-calendar";
+import { submissionContacts } from "@/lib/submission-contacts";
 import { CivicSectionNav } from "./participation-hub";
 import "./civic.css";
 
@@ -38,6 +41,42 @@ function downloadFile(content: string, filename: string, type: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+async function copyText(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // Clipboard permissions vary. Retain the copy action in those browsers.
+  }
+  const previousFocus = document.activeElement;
+  const field = document.createElement("textarea");
+  field.value = text;
+  field.readOnly = true;
+  field.tabIndex = -1;
+  field.setAttribute("aria-hidden", "true");
+  Object.assign(field.style, {
+    position: "fixed",
+    top: "0",
+    left: "0",
+    width: "1px",
+    height: "1px",
+    opacity: "0",
+  });
+  document.body.append(field);
+  field.select();
+  field.setSelectionRange(0, text.length);
+  try {
+    return document.execCommand("copy");
+  } catch {
+    return false;
+  } finally {
+    field.remove();
+    if (previousFocus instanceof HTMLElement) previousFocus.focus();
+  }
+}
+
 export default function ParticipationDetail({
   notice,
   initialNow,
@@ -49,6 +88,8 @@ export default function ParticipationDetail({
   const [draft, setDraft] = useState<Draft>(initialDraft);
   const [draftStatus, setDraftStatus] = useState("");
   const [shareStatus, setShareStatus] = useState("");
+  const [copiedEmail, setCopiedEmail] = useState("");
+  const [contactStatus, setContactStatus] = useState("");
   const today = southAfricaDate(now);
   const status = noticeStatus(notice, today, now);
   const isClosed = status === "closed" || status === "past-event";
@@ -56,6 +97,7 @@ export default function ParticipationDetail({
     (item) => item.id === notice.relatedNoticeId,
   );
   const source = civicSources.find((item) => item.id === notice.sourceId);
+  const contacts = submissionContacts(notice);
   const deadlineCalendar =
     !isClosed && notice.closesOn ? civicCalendar(notice, "deadline") : null;
   const eventCalendar =
@@ -109,7 +151,13 @@ export default function ParticipationDetail({
             `Source deadline: ${notice.closesOn}${notice.deadlineTime ? `, ${notice.deadlineTime}` : "; verify exact cutoff time in the source"}`,
           ]
         : []),
-      ...(notice.contact ? [`Source contact: ${notice.contact}`] : []),
+      ...contacts.map(
+        (contact) =>
+          `Source contact (${contact.purpose}): ${contact.name || contact.office} — ${contact.email}${contact.phone ? `; telephone ${contact.phone}` : ""}`,
+      ),
+      ...(notice.contact && !contacts.length
+        ? [`Source contact: ${notice.contact}`]
+        : []),
       ...notice.instructions.map(
         (instruction, index) => `${index + 1}. ${instruction}`,
       ),
@@ -135,14 +183,32 @@ export default function ParticipationDetail({
       );
   }
   async function share() {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      setShareStatus("Notice link copied.");
-    } catch {
-      setShareStatus(
-        "Copy this page’s address from your browser to share the notice.",
+    setShareStatus(
+      (await copyText(window.location.href))
+        ? "Notice link copied."
+        : "Copy this page’s address from your browser to share the notice.",
+    );
+  }
+  async function copyEmail(email: string, index: number) {
+    if (await copyText(email)) {
+      setCopiedEmail(email);
+      setContactStatus(
+        `Copied ${email}. Paste it into your email’s recipient field.`,
       );
+      return;
     }
+    setCopiedEmail("");
+    const address = document.getElementById(`submission-contact-${index}`);
+    if (address) {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(address);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }
+    setContactStatus(
+      "Email address selected. Press Ctrl+C to copy it, or touch and hold the address on a phone.",
+    );
   }
 
   return (
@@ -251,6 +317,79 @@ export default function ParticipationDetail({
               </Link>
             )}
           </section>
+          {contacts.length > 0 && (
+            <section
+              className="panel civic-contact-panel"
+              aria-labelledby="civic-contacts-title"
+            >
+              <p className="eyebrow">People & offices in the source</p>
+              <h2 id="civic-contacts-title">Contacts for this notice.</h2>
+              <p className="muted">
+                {contacts.some((contact) => contact.purpose === "submissions")
+                  ? "Use the address marked for submissions to send your response. "
+                  : "Use the official participation form or source instructions below to submit your response. "}
+                Enquiry and assistance contacts serve the separate purposes
+                shown below.
+                {isClosed &&
+                  " This is an archived notice; these contacts do not reopen its submission window."}
+              </p>
+              <div className="civic-contact-list">
+                {contacts.map((contact, index) => (
+                  <article className="civic-contact-card" key={contact.email}>
+                    <span
+                      className="civic-contact-purpose"
+                      data-purpose={contact.purpose}
+                    >
+                      {contact.purpose === "submissions"
+                        ? "Send submissions here"
+                        : contact.purpose === "enquiries"
+                          ? "Enquiries"
+                          : contact.purpose === "assistance"
+                            ? "Participation assistance"
+                            : "Contact stated in the notice"}
+                    </span>
+                    <h3>{contact.name || contact.office}</h3>
+                    <p className="muted civic-contact-office">
+                      {contact.name
+                        ? contact.office
+                        : "An individual recipient is not named in this record."}
+                    </p>
+                    <div className="civic-contact-email-row">
+                      <span
+                        className="civic-contact-email"
+                        id={`submission-contact-${index}`}
+                      >
+                        {contact.email}
+                      </span>
+                      <button
+                        className="button button-outline civic-copy-email"
+                        type="button"
+                        aria-label={`Copy email address ${contact.email}`}
+                        onClick={() => copyEmail(contact.email, index)}
+                      >
+                        {copiedEmail === contact.email ? (
+                          <Check size={14} aria-hidden="true" />
+                        ) : (
+                          <Copy size={14} aria-hidden="true" />
+                        )}
+                        {copiedEmail === contact.email
+                          ? "Copied"
+                          : "Copy email"}
+                      </button>
+                    </div>
+                    {contact.phone && (
+                      <p className="civic-contact-phone">
+                        Telephone: {contact.phone}
+                      </p>
+                    )}
+                  </article>
+                ))}
+              </div>
+              <p className="civic-contact-status" role="status">
+                {contactStatus}
+              </p>
+            </section>
+          )}
           <section className="panel" aria-labelledby="civic-instructions-title">
             <p className="eyebrow">Use the stated channel</p>
             <h2 id="civic-instructions-title">How to take part.</h2>
@@ -273,7 +412,7 @@ export default function ParticipationDetail({
                 <li key={instruction}>{instruction}</li>
               ))}
             </ol>
-            {notice.actionUrl && (
+            {notice.actionUrl && !notice.actionUrl.startsWith("mailto:") && (
               <div className="civic-actions">
                 <a
                   className="button"
@@ -283,17 +422,15 @@ export default function ParticipationDetail({
                 >
                   {isClosed
                     ? "Read original participation instructions"
-                    : notice.actionUrl.startsWith("mailto:")
-                      ? "Open email draft in your mail app"
-                      : "Open participation instructions"}
+                    : "Open participation instructions"}
                   <ArrowUpRight size={15} aria-hidden="true" />
                 </a>
               </div>
             )}
             <p className="muted" style={{ marginTop: 20, marginBottom: 0 }}>
               Confirm the current deadline, required documents and whether oral
-              participation needs a separate request. The Public Square does not send
-              submissions or register you for a hearing.
+              participation needs a separate request. The Public Square does not
+              send submissions or register you for a hearing.
             </p>
           </section>
           <section className="panel" aria-labelledby="civic-draft-title">
@@ -301,9 +438,9 @@ export default function ParticipationDetail({
             <h2 id="civic-draft-title">Prepare a local draft.</h2>
             <p className="muted">
               Write a reasoned response and download a text copy. Your writing
-              stays in this page’s memory until you leave; it is not sent to
-              The Public Square or the issuing authority. Check whether submissions will
-              become public before including personal information.
+              stays in this page’s memory until you leave; it is not sent to The
+              Public Square or the issuing authority. Check whether submissions
+              will become public before including personal information.
             </p>
             {isClosed && (
               <p className="muted">
@@ -442,12 +579,6 @@ export default function ParticipationDetail({
                     Read the current source for the stage and participation
                     arrangements.
                   </dd>
-                </div>
-              )}
-              {notice.contact && (
-                <div>
-                  <dt>Contact stated in source</dt>
-                  <dd>{notice.contact}</dd>
                 </div>
               )}
               <div>

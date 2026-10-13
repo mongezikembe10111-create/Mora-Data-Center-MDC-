@@ -3,13 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/prepare-map-worker.mjs",
     "dev": "next dev --hostname 0.0.0.0",
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "tsx --test src/lib/*.test.ts",
     "validate:data": "tsx scripts/data-validation.ts",
-    "prebuild": "npm run validate:data",
+    "prebuild": "node scripts/prepare-map-worker.mjs && npm run validate:data",
     "test:e2e": "playwright test"
   },
   "dependencies": {

@@ -422,6 +422,70 @@
   color: var(--muted);
   font-size: 13px;
 }
+.civic-contact-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 22px;
+}
+.civic-contact-card {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #0c1320;
+}
+.civic-contact-purpose {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: var(--blue);
+  font-size: 11px;
+}
+.civic-contact-purpose[data-purpose="submissions"] {
+  color: var(--lime);
+}
+.civic-contact-card h3 {
+  margin-bottom: 7px;
+  font-size: 15px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.civic-contact-card .civic-contact-office {
+  margin-bottom: 15px;
+  font-size: 12px;
+}
+.civic-contact-email-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  min-width: 0;
+}
+.civic-contact-email {
+  flex: 1 1 220px;
+  min-width: 0;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.civic-copy-email {
+  flex: 0 0 auto;
+  min-height: 40px;
+}
+.civic-contact-phone {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.civic-contact-status {
+  min-height: 20px;
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
 .civic-draft-form {
   display: grid;
   gap: 17px;

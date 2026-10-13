@@ -24,6 +24,7 @@ import {
   MunicipalityFinder,
 } from "./home-interactions";
 import SiteExperience from "./site-experience";
+import HeroBrandMotion from "./hero-brand-motion";
 import "./public-square-home.css";
 
 const destinations = [
@@ -157,6 +158,7 @@ export default function PublicSquareHome() {
             </p>
           </div>
           <div className="square-hero-evidence">
+            <HeroBrandMotion />
             <div className="square-evidence-label">
               <span className="square-mini-cross">+</span> A CLOSER LOOK AT OUR
               DEMOCRACY <span>OPEN DATA</span>
